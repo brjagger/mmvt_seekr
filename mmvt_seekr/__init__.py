@@ -4,7 +4,7 @@ SEEKR toolkit for multiscale MD/BD/Milestoning simulations
 """
 
 # Add imports here
-from .analyze import *
+from mmvt_seekr import analyze, model, plots
 
 # Handle versioneer
 from ._version import get_versions
