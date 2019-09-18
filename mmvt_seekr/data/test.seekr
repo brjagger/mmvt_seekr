@@ -1,0 +1,18 @@
+### General System Info##
+project_name test_mmvt_inp
+rootdir /u1/bjagger/mmvt_param_test
+
+##System Files###
+
+system_pdb_filename ~/tryp_inp_test/holo_leap.pdb
+system_parm_filename ~/tryp_inp_test/holo.parm7
+system_psf_filename foo.psf
+lig_pqr_filename lig.pqr
+rec_dry_pqr_filename rec_dry.pqr
+
+###Milestone Definition###
+milestone1 [
+
+
+
+]
