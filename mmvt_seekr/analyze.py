@@ -340,6 +340,9 @@ def check_milestone_convergence(model, bound_dict, conv_stride, max_steps, calc_
 	'''
 
 	'''
+	n_anchors = 0
+	for site in model.sites:
+		n_anchors += site.num_anchors	
 	conv_intervals = np.arange(conv_stride, max_steps, conv_stride)
 	N_conv = np.zeros((15,15,len(conv_intervals)))
 	R_conv = np.zeros((15,15,len(conv_intervals)))
