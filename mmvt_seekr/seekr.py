@@ -23,7 +23,8 @@ Parameters
 ##Parse SEEKR input file###
 
 import argparse
-import os
+import os, re, shutil, sys
+from itertools import islice
 
 inputs = { #contains all DEFAULT parameters for seekr input file
 	###Genaral Parameters###
@@ -70,9 +71,9 @@ def _get_inputs(args,):
 	if args['input_filename']:
 		input_filename = args['input_filename']
 		new_inp = _parse_seekr_input(input_filename)
-		print(new_inp)
+		#print(new_inp)
 		inputs.update(new_inp)
-		print(inputs)
+		#print(inputs)
 	else:
 		unittest.main()
 		exit()
@@ -99,7 +100,7 @@ def _boolean(arg):
 
 def _parse_milestone_inputs(inp):
 	milestones = []
-	for key in in sorted(inp.keys()):
+	for key in sorted(inp.keys()):
 		if re.match("milestone[0-9]+", key):
 			milestone_dict = {'key': key}
 			for param in inp[key].split(','):
@@ -112,6 +113,32 @@ def _parse_milestone_inputs(inp):
 	return milestones
 
 def _generate_milestone_lists(milestones):
+	for milestone in milestones:
+		milestone_pairs = []
+		milestone_vals_string = milestone['milestone_values']
+		raw_milestone_vals = milestone_vals_string.split()
+		#print("milestone values",  raw_milestone_vals)
+		pairs = _make_milestone_pairs(raw_milestone_vals)
+		for p in pairs:
+			milestone_pairs.append(p)
+		#print(milestone_pairs)
+		milestone['milestone_pair_list'] = milestone_pairs
+	return milestones
+
+def _make_milestone_pairs(seq, n=2):
+    "Returns a sliding window (of width n) over data from the iterable"
+    "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
+
+def _distance_milestones(milestone):
+
+	return
 	
 
 def _generate_filetree(inp, sys_params):
@@ -143,6 +170,9 @@ def prepare_seekr():
 	sys_params = _get_sys_params(inputs)
 	_generate_filetree(inputs, sys_params)
 	milestones = _parse_milestone_inputs(inputs)
+	milestones = _generate_milestone_lists(milestones)
+	for milestone in milestones:
+		print('Milestone pairs', milestone['milestone_pair_list'])
 
 
 
