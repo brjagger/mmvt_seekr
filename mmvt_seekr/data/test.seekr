@@ -4,6 +4,7 @@ rootdir ./data/mmvt_param_test
 
 ##System Files###
 
+ff amber
 system_pdb_filename ./data/holo_leap.pdb
 system_parm_filename ./data/holo.parm7
 system_psf_filename foo.psf
