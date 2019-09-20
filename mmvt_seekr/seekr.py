@@ -25,6 +25,7 @@ Parameters
 import argparse
 import os, re, shutil, sys
 from itertools import islice
+import filetree
 
 inputs = { #contains all DEFAULT parameters for seekr input file
 	###Genaral Parameters###
@@ -141,9 +142,10 @@ def _parse_milestone_inputs(inp):
 			milestones.append(milestone_dict)
 	return milestones
 
-def _generate_milestone_lists(milestones, anchor_list):
+def _generate_milestone_lists(milestones,):
 	for milestone in milestones:
 		milestone_pairs = []
+		anchor_list = []
 		milestone_vals_string = milestone['milestone_values']
 		raw_milestone_vals = milestone_vals_string.split()
 		#print("milestone values",  raw_milestone_vals)
@@ -172,12 +174,7 @@ def _make_milestone_pairs(seq, n=2):
 	for elem in it:
 		result = result[1:] + (elem,)
 		yield result
-
-def _distance_milestones(milestone):
-
-	return
 	
-
 def _generate_filetree(inp, sys_params):
 	print("Creating file tree at location: %s" % inp['rootdir'])
 	if sys_params['empty_rootdir'] and os.path.isdir(inp['rootdir']): # then we're in test mode, delete anything that is in the rootdir
@@ -187,9 +184,14 @@ def _generate_filetree(inp, sys_params):
 		os.mkdir(inp['rootdir']) # then create it
 	return
 
+def _get_filetree_settings(anchor_list):
+	filetree_settings = {
+		'anchor_list':anchor_list,
+	}
+
+	return filetree_settings
 
 def prepare_seekr():
-	anchor_list = []
 	parser = argparse.ArgumentParser(description="top level SEEKR program used to prepare and generate all input files necessary for a SEEKR calculation")
 	parser.add_argument('input_filename', metavar='INPUT_FILENAME', type = str, help="name of SEEKR input file")
 	args = parser.parse_args() #parse command line arguments
@@ -198,18 +200,15 @@ def prepare_seekr():
 	_get_inputs(args,)
 	sys_params = _get_sys_params(inputs) #parse general system parameters (structures, forcefield files, directory names from input file)
 	md_settings = _get_md_settings(inputs) #parse parameters for MD simulations from input file
-	milestones = _parse_milestone_inputs(inputs) #parse milestone CV parameters and milestone values from input file
-	milestones, anchor_list = _generate_milestone_lists(milestones, anchor_list) #generate upper/lower bounds of a SINGLE CV for each anchor/Voronoi cell
+	md_milestones = _parse_milestone_inputs(inputs) #parse milestone CV parameters and milestone values from input file
+	milestones, md_anchor_list = _generate_milestone_lists(md_milestones) #generate upper/lower bounds of a SINGLE CV for each anchor/Voronoi cell
+	#TODO BD milestones
 	#print(anchor_list)
 	_generate_filetree(inputs, sys_params) #creates/clears top level ditectory
-	#filetree_settings_all=dict(filetree_settings.items() + sys_params.items())
-	#filetree.main()
+	filetree_settings = _get_filetree_settings(md_anchor_list)
+	md_filetree_settings_all = {**filetree_settings, **sys_params}
+	anchor_dirlist, md_file_paths = filetree.md_filetree(md_filetree_settings_all)
 
-
-
-
-	#for milestone in milestones:
-	#	print('Milestone pairs', milestone['milestone_pair_list'])
 
 
 
