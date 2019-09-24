@@ -1,15 +1,16 @@
 ### General System Info##
-project_name test_mmvt_inp
-rootdir ./data/mmvt_param_test
+project_name 				test_mmvt_inp
+rootdir 					./data/mmvt_param_test
 
 ##System Files###
 
 ff amber
-system_pdb_filename ./data/holo_leap.pdb
-system_parm_filename ./data/holo.parm7
-system_psf_filename foo.psf
-lig_pqr_filename lig.pqr
-rec_dry_pqr_filename rec_dry.pqr
+system_pdb_filename 		./tests/tryp_inp_test/holo_leap.pdb
+system_parm_filename 		./tests/tryp_inp_test/holo.parm7
+system_rst_filename			./tests/tryp_inp_test/holo.rst7
+system_psf_filename 		foo.psf
+lig_pqr_filename 			lig.pqr
+rec_dry_pqr_filename 		rec_dry.pqr
 
 ###Milestone Definition###
 milestone1 [
@@ -19,3 +20,14 @@ milestone1 [
 	milestone_values 1 2 4 6 8 10 12 14,
 	equil_rest_force 50, 
 ]
+
+###Equilibration Parameters##
+equil 				True
+equil_ensemble		nvt
+equil_steps 		1000000
+equil_write_freq	100000
+
+###Production Parameters###
+prod 				True
+prod_ensemble		nvt
+prod_steps			20000000

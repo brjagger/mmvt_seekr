@@ -25,7 +25,7 @@ Parameters
 import argparse
 import os, re, shutil, sys
 from itertools import islice
-import filetree
+import filetree, md
 
 inputs = { #contains all DEFAULT parameters for seekr input file
 	###Genaral Parameters###
@@ -36,8 +36,10 @@ inputs = { #contains all DEFAULT parameters for seekr input file
 	'equil_write_freq':10000,
 	'prod_steps':10000000,
 	'prod_write_freq':100000,
-
+	'cell_shape': 'box',
+	'rec_xsc_filename':'',	
 }
+
 
 def _parse_seekr_input(inp_filename):
 	new_inputs = {}
@@ -92,32 +94,42 @@ def _get_sys_params(inp):
 		'project_name':inp['project_name'],
 		'rootdir':inp['rootdir'],
 		'system_pdb_filename':inp['system_pdb_filename'], #Protein-Ligand complex
-		'system_parm_filename':inp['system_parm_filename'], #for AMBER FF
-		'system_psf_filename':inp['system_psf_filename'],   # for CHARMM FF
+		'system_rst_filename':inp['system_rst_filename'],
 		'lig_pqr_filename':inp['lig_pqr_filename'], #for BD simulations
 		'rec_dry_pqr_filename':inp['rec_dry_pqr_filename'], #for BD simulations
 		'empty_rootdir':_boolean(inp['empty_rootdir']),
 		}
+	if inp['ff'] == 'amber':
+		sys_params.update({'system_params_filename':inp['system_parm_filename']}) #for AMBER FF	
+	if inp['ff'] == 'charmm':
+		sys_params.update({'system_params_filename':inp['system_psf_filename']})  # for CHARMM FF
+
 	return sys_params
 
-def _get_md_settings(inp):
+def _get_md_settings(inp, md_file_paths):
 	md_settings= { # settings for the md module
 	##General shared MD settings
 		'ff':inp['ff'], # the forcefield to use
 		'watermodel':inp['watermodel'],
 		'master_temperature':inp['master_temperature'],
+		'cell_shape':inp['cell_shape'],
 	##Restrained equilibration settings
-		'equil_settings':{
-			'namd_settings':{
-				'numsteps':inp['equil_steps'],
-				'write_freq':inp['equil_write_freq']}
+		'equil':_boolean(inp['equil']),
+		'equil_settings':{				
+				'ensemble': inp['equil_ensemble'],
+				'namd_settings':{
+					'write_freq':inp['equil_write_freq'],
+					'numsteps':inp['equil_steps'],
+					'extendedsystem':inp['rec_xsc_filename']
+					}	
 				},
 	##MMVT Production specific settings
 		'prod_settings':{
-			'namd_settings':{
 				'numsteps':inp['prod_steps'],
-				'write_freq':inp['prod_write_freq']}
+				'write_freq':inp['prod_write_freq'],
+				'ensemble':inp['prod_ensemble'],
 				},
+		'md_file_paths':md_file_paths, # file paths to the MD directories in the anchor file		
 		}
 
 	return md_settings
@@ -199,7 +211,6 @@ def prepare_seekr():
 
 	_get_inputs(args,)
 	sys_params = _get_sys_params(inputs) #parse general system parameters (structures, forcefield files, directory names from input file)
-	md_settings = _get_md_settings(inputs) #parse parameters for MD simulations from input file
 	md_milestones = _parse_milestone_inputs(inputs) #parse milestone CV parameters and milestone values from input file
 	milestones, md_anchor_list = _generate_milestone_lists(md_milestones) #generate upper/lower bounds of a SINGLE CV for each anchor/Voronoi cell
 	#TODO BD milestones
@@ -208,6 +219,9 @@ def prepare_seekr():
 	filetree_settings = _get_filetree_settings(md_anchor_list)
 	md_filetree_settings_all = {**filetree_settings, **sys_params}
 	anchor_dirlist, md_file_paths = filetree.md_filetree(md_filetree_settings_all)
+	md_settings = _get_md_settings(inputs, md_file_paths) #parse parameters for MD simulations from input file
+	md_settings_all = {**md_settings, **sys_params, **filetree_settings}
+	md.main(md_settings_all)
 
 
 
