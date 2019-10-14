@@ -14,7 +14,7 @@ import pdb2 as pdb
 self_path = os.path.dirname(os.path.realpath(__file__)) # get the path to this script
 
 namd_input_template_location = os.path.join(self_path, 'namd_input.template')
-colvar_input_template_location = os.path.join(self_path, 'colvar.template')
+colvar_input_template_location = os.path.join(self_path, 'colvars.template')
 colvar_script_name = 'colvars.script'
 
 class Namd_template(Adv_template):
@@ -34,32 +34,32 @@ class Namd_template(Adv_template):
 		out_file.close()
 		return
 
-def _parse_pdb(filename):
+def _parse_pdb(filename, struct_name="pickle",):
 	parser = pdb.Big_PDBParser() 
 	struct=parser.get_structure(struct_name, filename, pqr=False, conventional=False) # load the file
 	return struct
 
 def cell_params(struct_name, shape="box"):
-  '''returns the cellorigin and cellbasisvector parameters for a namd input file'''
-  params = {}
-  struct= _parse_pdb(struct_name)
-  boxdims = pdb.minmax_width(struct) # measures the width of the waterbox
-  boxctr =  pdb.center(struct)
-  if shape == "box":
-    params['cellbasisvector1'] = "%8f 0.0000000 0.0000000" % boxdims[0]
-    params['cellbasisvector2'] = "0.0000000 %8f 0.0000000" % boxdims[1] # writes these values to 8 digits
-    params['cellbasisvector3'] = "0.0000000 0.0000000 %8f" % boxdims[2]
-  elif shape == "oct":
-    d = boxdims[0] # assuming that the octahedron is aligned to the x-axis
-    params['cellbasisvector1'] = "%8f 0.0000000 0.0000000" % d
-    params['cellbasisvector2'] = "%8f %8f 0.0000000" % ((-1.0/3.0)*d, (2.0/3.0)*sqrt(2.0)*d) # writes these values to 8 digits
-    params['cellbasisvector3'] = "%8f %8f %8f" % ((-1.0/3.0)*d, (-1.0/3.0)*sqrt(2.0)*d, (-1.0/3.0)*sqrt(6.0)*d)
-  else:
-    raise Exception("%s is not a valid ensemble option. Must be 'box' or 'oct'." % (shape,))
-   
-  params['cellorigin'] = '%8f %8f %8f' % boxctr
-  return params
-  
+	'''returns the cellorigin and cellbasisvector parameters for a namd input file'''
+	params = {}
+	struct= _parse_pdb(struct_name)
+	boxdims = pdb.minmax_width(struct) # measures the width of the waterbox
+	boxctr =  pdb.center(struct)
+	if shape == "box":
+		params['cellbasisvector1'] = "%8f 0.0000000 0.0000000" % boxdims[0]
+		params['cellbasisvector2'] = "0.0000000 %8f 0.0000000" % boxdims[1] # writes these values to 8 digits
+		params['cellbasisvector3'] = "0.0000000 0.0000000 %8f" % boxdims[2]
+	elif shape == "oct":
+		d = boxdims[0] # assuming that the octahedron is aligned to the x-axis
+		params['cellbasisvector1'] = "%8f 0.0000000 0.0000000" % d
+		params['cellbasisvector2'] = "%8f %8f 0.0000000" % ((-1.0/3.0)*d, (2.0/3.0)*sqrt(2.0)*d) # writes these values to 8 digits
+		params['cellbasisvector3'] = "%8f %8f %8f" % ((-1.0/3.0)*d, (-1.0/3.0)*sqrt(2.0)*d, (-1.0/3.0)*sqrt(6.0)*d)
+	else:
+		raise Exception("%s is not a valid ensemble option. Must be 'box' or 'oct'." % (shape,))
+	 
+	params['cellorigin'] = '%8f %8f %8f' % boxctr
+	return params
+	
 # Parameters from each dictionary updated in the final NAMD parameters in the order defined below...
 default_namd_input_params = {
 'caption':'default/',
@@ -184,8 +184,7 @@ default_namd_input_params = {
 'tclforcesscript':'',
 
 'colvars':'on',
-'colvarsscript':'colvars.script',
-'colvarsconfig':'',
+'colvarsconfig':'colvars.script',
 
 
 'pairlistdist':'11',
@@ -228,6 +227,7 @@ amber_params = { # based on "Using the Amber force field in NAMD" at http://ambe
 equil_params = {
 	'caption':'SEEKR Anchor Equilibration', # the string at the top of the file
 	'pme':'yes',
+	'equilibration': 'yes',
 	#'fullelectfrequency':'1', # frequency (in timesteps) that electrostatics are evaluated
 	#'veldcdfile':'${outname}vel.dcd',
 	#'veldcdfreq':'1000',
@@ -277,6 +277,37 @@ def write_freq_params(freq):
 	params['outputtiming'] = freq
 	return params
 
+def _make_colvars_input(milestones,stage,anchor_index):
+	default_colvars_params = {
+		'colvarstrajfrequency' : '0',
+		'colvarsrestartfrequency' : '0',
+		}
+	
+	colvars_params = {}
+	colvars_params.update(default_colvars_params)
+	index = 0
+
+
+	for milestone in milestones:
+		milestone[milestone['key']] = True
+		milestone_pair = milestone['%s_pair_list' %milestone['key']][anchor_index]
+		lower_bound = milestone_pair[0]
+		upper_bound = milestone_pair[1]
+		centers = str((float(upper_bound) + float(lower_bound))/2)
+		centers_name ='%s_centers' % milestone['key']
+		colvars_params[centers_name] = centers
+		colvars_params.update(milestone)
+		#print(colvars_params)
+
+	if stage == 'equil':
+		colvars_params['restrained'] = 'yes'
+	else:
+		colvars_params['restrained'] = 'no'
+
+	colvars = Namd_template(colvar_input_template_location, colvars_params)
+
+	return (colvars, colvars_params)
+
 def _make_input(holo, stage, ff, write_freq, ensemble='nvt', get_cell=False, settings={}):
 	'''creates NAMD input files based on the settings specified:
 	arguments:
@@ -315,8 +346,8 @@ def _make_input(holo, stage, ff, write_freq, ensemble='nvt', get_cell=False, set
 		#ensemble = settings['equil_settings']['ensemble']
 		params.update(equil_params)
 	if stage == 'prod':
-		write_freq = settings['prod_settings']['write_freq']
-		ensemble = settings['equil_settings']
+		#write_freq = settings['prod_settings']['write_freq']
+		#ensemble = settings['equil_settings']
 		params.update(prod_params)
 
 	params.update(write_freq_params(write_freq))

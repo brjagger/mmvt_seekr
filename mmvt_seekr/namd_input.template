@@ -24,8 +24,8 @@ parameters              $parameters4{% endif %}{%   if $parameters5 %}
 parameters              $parameters5{% endif %}{%   if $parameters6 %}
 parameters              $parameters6{% endif %}{%   if $parameters7 %}
 parameters              $parameters7
-{% endif %}{% endif %}{% if $inpfilename %}{% if $bincoordinates %}binCoordinates          $bincoordinates
-{% endif %}{% endif %}{%   if $temperature %}temperature             $temperature
+{% endif %}{% endif %}{% if $bincoordinates %}binCoordinates          $bincoordinates
+{% endif %}{%   if $temperature %}temperature             $temperature
 {%   elseif $binvelocities %}binVelocities           $binvelocities
 {%   elseif $velocities %}velocities              $velocities
 {%   endif %}{%   if $cwd %}cwd                     $cwd
@@ -127,6 +127,9 @@ colvars                 $colvars
 colvarsConfig           $colvarsconfig
 
 
+{% endif %}
+{% if $equilibration == 'yes' %}
+numsteps 				$numsteps
 {% endif %}
 
 {% if $post_string %}$post_string 

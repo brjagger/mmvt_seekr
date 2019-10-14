@@ -12,7 +12,7 @@ from copy import deepcopy
 import string
 import numpy
 from numpy import array, matrix
-from io import StringIO # NOTE: may want to change this to cStringIO if more speed is needed in the future
+from io import StringIO, IOBase # NOTE: may want to change this to cStringIO if more speed is needed in the future
 #from modscience import normalize_vector # makes the longest vector equal to 1 # this is too annoying to import
 import unittest
 import xml.etree.cElementTree as ET
@@ -238,7 +238,7 @@ class Big_PDBParser():
     is set to True, then indeces from the file will be preserved'''
 
     atoms = []
-    if type(filename) == file or type(filename) == type(StringIO()): # then we're passing a file or file-like object
+    if isinstance(filename, IOBase) or type(filename) == type(StringIO()): # then we're passing a file or file-like object
       pdbfile = filename
     elif type(filename) == str: # otherwise, try to open it as a string
       pdbfile = open(filename, 'r')
@@ -294,8 +294,8 @@ class Big_PDBParser():
           atom = Atom(record=linelist[0], index=atomindex, name=linelist[2], altloc="", resname=linelist[3], chain=linelist[4], resid=resid_index, icode=linelist[6], x=linelist[7], y=linelist[8], z=linelist[9], charge=linelist[10], radius=linelist[11], occupancy='1.0', beta='0.0', element=element)
 
         except IndexError:
-          print("failure line: %s" % pdbline)
-          print("rawline: %s" % rawlinelist)
+          print(("failure line: %s" % pdbline))
+          print(("rawline: %s" % rawlinelist))
           raise IndexError
 
 
@@ -337,8 +337,8 @@ class Big_PDBParser():
 
 
         except IndexError:
-          print("failure line: %s" % pdbline)
-          print("rawline: %s" % rawlinelist)
+          print(("failure line: %s" % pdbline))
+          print(("rawline: %s" % rawlinelist))
           raise IndexError
 
         #atom = Atom(record=linelist[0], index=linelist[1], name=linelist[2], resname=linelist[3], chain=linelist[4], resid=linelist[5], x=linelist[6], y=linelist[7], z=linelist[8], occupancy=linelist[9], beta=linelist[10], atomtype=linelist[11])
@@ -360,7 +360,7 @@ class Big_PDBParser():
 
     #print "rawlinelist:", map(string.strip, rawlinelist[0])
     if not rawlinelist:
-      print("problem with line:", line)
+      print(("problem with line:", line))
     return [list(map(string.strip, rawlinelist[0]))] # strip all the spaces off and return it
 
   def get_structure(self, struct_id, filename, preserve_index=False, preserve_resid=True, pqr=False, pqrxml=False, conventional=False):
@@ -654,7 +654,7 @@ def load_pdb_traj(infilename):
   if curstruct.num_atoms > 0: # this is to help prevent a frame containing nothing from being written
     traj.append(curstruct)
   pdbtemp.close()
-  print("time elapsed:", time.time() - starttime)
+  print(("time elapsed:", time.time() - starttime))
   return traj
 
 def pdb_from_MDAnalysis(MDatomselection):
@@ -677,13 +677,13 @@ def test2methods(n,MDatomselection):
   for i in range(n):
     something = pdb_from_MDAnalysis(MDatomselection)
   endtime = time.time()
-  print("method 1 time:", endtime - starttime)
+  print(("method 1 time:", endtime - starttime))
 
   starttime = time.time()
   for i in range(n):
     something = pdb_from_MDAnalysis_alt(MDatomselection)
   endtime = time.time()
-  print("method 2 time:", endtime - starttime)
+  print(("method 2 time:", endtime - starttime))
 
 def ligmerge(ligand, receptor, remove_water=True, hard_limit=3.0, verbose=True):
   '''given a ligand structure and a receptor structure, will merge the two to create a single structure.
@@ -691,7 +691,7 @@ def ligmerge(ligand, receptor, remove_water=True, hard_limit=3.0, verbose=True):
   removing_atoms = ["HOH", "H2O", "WAT", "Cl-", "Na+"]
   new_receptor = deepcopy(receptor)
   lig_com = center_of_mass(ligand)
-  if verbose: print("lig_com:", lig_com)
+  if verbose: print(("lig_com:", lig_com))
   lig_rad = molecular_radius(ligand)
   within_lig_proximity = [] # all receptor atoms close to the ligand
   for recatom in range(receptor.num_atoms): # loop thru the receptor atoms
@@ -715,7 +715,7 @@ def ligmerge(ligand, receptor, remove_water=True, hard_limit=3.0, verbose=True):
           else: # then its presumably a hydrogen
             resids_to_remove.append(prox_atom.resid) # NOTE: method does not exist yet
         else: # then something else is clashing
-          if verbose: print("Alert: non-H2O atom clashing with ligand: id:%d resname:%s resid: %s" % (prox_atom.index, prox_atom.resname, prox_atom.resid))
+          if verbose: print(("Alert: non-H2O atom clashing with ligand: id:%d resname:%s resid: %s" % (prox_atom.index, prox_atom.resname, prox_atom.resid)))
       else:
         pass
         #print "not clashing", numpy.linalg.norm(rec_coords - lig_coords), rec_coords, lig_coords

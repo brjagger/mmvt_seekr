@@ -1,6 +1,8 @@
 import os
 from shutil import copyfile
 import namd_inputs
+import pickle
+from adv_template import Adv_template, File_template
 
 def _make_relative_path(oldpath, fromdir):
 	'''given a relative 'oldpath' to a file, will construct a relative path from a 'fromdir' directory to the file'''
@@ -23,6 +25,25 @@ def _make_relative_path(oldpath, fromdir):
 
 	return sep.join(relpathlist) # and join them with the '/' to make our relative path
 
+def _gen_anchor_milestone_params(milestones, anchor_index):
+	anchor_milestone_params= []
+
+	for milestone in milestones:
+		milestone_param_dict = {}
+		milestone_pair = milestone['%s_pair_list' %milestone['key']][anchor_index]
+		milestone_param_dict['group'] = milestone['key']
+		milestone_param_dict['milestone_pair'] = milestone_pair
+		milestone_param_dict['lower_bound'] = float(milestone_pair[0])
+		milestone_param_dict['upper_bound'] = float(milestone_pair[1])
+		milestone_param_dict['lower_anchor'] = (anchor_index -1)
+		milestone_param_dict['upper_anchor'] = (anchor_index +1)
+		milestone_param_dict['lower_milestone_index'] = (anchor_index) ## may need to be changed for multidimensional milestones
+		milestone_param_dict['upper_milestone_index'] =  (anchor_index +1)
+		milestone_param_dict['curr_anchor'] = anchor_index
+		anchor_milestone_params.append(milestone_param_dict)
+
+
+	return anchor_milestone_params
 
 def _prep_building(settings):
 	i = settings['index']
@@ -31,6 +52,8 @@ def _prep_building(settings):
 	ff = settings['ff']
 	system_params_filename = settings['system_params_filename']
 	system_rst_filename = settings['system_rst_filename']
+	system_bincoor_filename = settings['system_bin_coordinates']
+	system_extended_system_filename = settings['extendedsystem']
 	building = settings['md_file_paths'][i]['building']	
 
 
@@ -38,24 +61,29 @@ def _prep_building(settings):
 	if ff == 'amber':
 		prmtop = os.path.join(building,'holo.parm7')
 		inpcrd = os.path.join(building,'holo.rst7')
+		bincoor= os.path.join(building,'holo.coor')
+		xsc = os.path.join(building,'holo.xsc')
 		copyfile(system_params_filename, prmtop)
 		copyfile(system_rst_filename, inpcrd)
+		copyfile(system_bincoor_filename, bincoor)
+		copyfile(system_extended_system_filename, xsc)
 	if ff == 'charmm':
 		copyfile(system_params_filename, os.path.join(building,'holo.psf'))
 
-	return prmtop, inpcrd
+	return prmtop, inpcrd, bincoor, xsc
 
-# def _prep_equil(md_settings):
-# 	inp, namd_params = namd_inputs._make_input(stage='equil',get_cell=False, settings=md_settings)
-# 	input_name = os.path.join(md_settings['md_file_paths'][i]['equil'], 'equil_1.namd')
-# 	inp.save(input_name)
+# def _prep_colvars(settings, milestones, filename='colvar.script'):
+# 	print(milestones)
+# 	for milestone in milestones:
+# 		#colvar_type = milestone['colvar_type']
+# 		milestone['colvar_filename'] = filename
+# 		namd_inputs._make_colvars_input(milestone)
 
-		
 
-# 	return
+# 	return filename
 
-def prep(settings, stage, inpname, outname='', ):
-	print("creating %s files" % stage)
+def prep(settings, milestones, stage, inpname, outname='', ):
+	#print("creating %s files" % stage)
 	
 	i = settings['index']
 	path = settings['md_file_paths'][i][stage]
@@ -63,11 +91,13 @@ def prep(settings, stage, inpname, outname='', ):
 	anchor_list = settings['anchor_list']
 	temperature = settings['master_temperature']
 
+
 	if not outname: outname = stage # provide the default outname
 	get_cell = False
 
 	if stage == 'equil':
 		stage_settings = settings['equil_settings']
+		#_prep_colvars(settings, milestones)
 		if not stage_settings['namd_settings']['extendedsystem']: # if they didn't define a starting XSC file
 			get_cell = settings['cell_shape'] # create the periodic boundary conditions
 		stage_settings = settings['equil_settings']
@@ -77,13 +107,16 @@ def prep(settings, stage, inpname, outname='', ):
 
 	ensemble = stage_settings['ensemble']
 	namd_settings = stage_settings['namd_settings'] # extra settings to send to the NAMD input file
-	
+	namd_settings['master_temperature'] = temperature
+
 	#settings['whoami'] = str(pos_milestone.index)
 	#settings['siteid'] = str(pos_milestone.siteid)
 	#settings['grid_edge_rad'] = '0.0' # temporary value until this can be more effectively predicted; will speed up TCL script evaluation
 	if ff == 'amber':
 		namd_settings['parmfile']=_make_relative_path(settings['prmtop'],path) # Find the relative location of the prmtop/inpcrd to be used in the mins
 		namd_settings['ambercoor']=_make_relative_path(settings['inpcrd'],path)
+		#namd_settings['bincoordinates']= _make_relative_path(settings['bincoor'],path)
+		#namd_settings['extendedsystem']= _make_relative_path(settings['xsc'],path)
 	elif ff == 'charmm':
 		namd_settings['amber'] = 'no'
 		namd_settings['coordinates'] = '../holo_wet.pdb'
@@ -97,18 +130,25 @@ def prep(settings, stage, inpname, outname='', ):
 				i = str(counter)
 			namd_settings['parameters%s' % i] = parameter
 			counter += 1
-			#namd_settings['parameters2'] = '/extra/moana/rswift1/Permeability/Colvar/A/1F/par_all36_lipid.prm'
 
-	#fhpd_file = 'fhpd.txt'
 	namd_settings['watermodel'] = settings['watermodel']
 	if stage == 'equil':
+		print("creating equilibration files")
 		holo= settings['system_pdb_filename']
 		namd_settings['inpfilename'] = inpname
 		namd_settings['outfilename'] = outname + "_1"
-		print(settings['equil_settings']['namd_settings']['write_freq'])
+		namd_settings['bincoordinates']= _make_relative_path(settings['bincoor'],path)
+		namd_settings['extendedsystem']= _make_relative_path(settings['xsc'],path)
+		#print(settings['equil_settings']['namd_settings']['write_freq'])
 		write_freq= settings['equil_settings']['namd_settings']['write_freq']
 		ensemble = settings['equil_settings']['ensemble']
 
+		colvars, colvars_params = namd_inputs._make_colvars_input(milestones, stage, i)
+		colvars_name = os.path.join(path,'colvars.script')
+		colvars.save(colvars_name)
+
+
+		#print(namd_settings)
 		inp, namd_params=namd_inputs._make_input(holo, stage, ff,write_freq, ensemble=ensemble,  get_cell=get_cell, 
 			settings=namd_settings) #...
 		input_name = os.path.join(path, '%s_1.namd' % (stage))
@@ -117,87 +157,120 @@ def prep(settings, stage, inpname, outname='', ):
 		param_file = open(param_filename, 'wb')
 		pickle.dump(namd_params, param_file)
 		param_file.close()
+
 		return os.path.join(stage, namd_settings['outfilename']) # return ens_equil
 
 
-# 	if stage == 'fwd_rev':
-# 		prelim_string_template = '''set TEMP $temperature
-# set NUM_REVERSALS $num_reversals
-# global REV_FILENAME_BASE; set REV_FILENAME_BASE "REV_COMPLETED.txt"
-# global FWD_FILENAME_BASE; set FWD_FILENAME_BASE "FWD_COMPLETED.txt"
-# global RESTART_FREQ; set RESTART_FREQ $restart_freq
-# global RUN_FREQ; set RUN_FREQ $run_freq
-# set ENS_EQUIL_FIRST_FRAME $begin
-# set ENS_EQUIL_STRIDE $stride
-# set LAUNCHES_PER_CONFIG $launches_per_config
-# set FRAME_CHUNK_SIZE $frame_chunk_size
-# set UMBRELLA_GLOB_DIR "../ens_equil/" ;# the umbrella sampling directory
-# set UMBRELLA_GLOB_NAME "ens_equil_0_?.dcd" ;# the umbrella sampling trajs
-# set nr [numReplicas]
-# set replica_id [myReplica] ;# get the ID of this replica'''
-# 		hedron = positions_orient.get_hedron(settings['quat_hedron'])
-# 		settings['care_about_self'] = 'False'
-# 		settings['phase'] = 'reverse'
-# 		settings['abort_on_crossing'] = 'True'
-# 		#settings['fhpd_file'] = '../reverse/fhpd.txt'
-# 		settings['max_num_steps'] = stage_settings['max_num_steps']
-# 		settings['milestone_string'] = make_milestone_list(settings['raw_milestone_list'],hedron)
-# 		namd_settings['tclforces_vars'] = tclforces(settings).get_output()
+	if stage == 'prod':
+		print("creating production files")
+		holo= settings['system_pdb_filename']
+		namd_settings['inpfilename'] = inpname
+		namd_settings['outfilename'] = outname + "_1"
+		#print(settings['equil_settings']['namd_settings']['write_freq'])
+		write_freq= settings['prod_settings']['namd_settings']['write_freq']
+		ensemble = settings['prod_settings']['ensemble']
 
-# 		num_frames = settings['ensemble_equil_settings']['namd_settings']['numsteps']
-# 		dcd_write_freq = int(settings['ensemble_equil_settings']['namd_settings']['dcdfreq'])
-# 		begin = stage_settings['extract_first'] # new parameter
-# 		end = int(num_frames)/dcd_write_freq + 1
-# 		stride = stage_settings['extract_stride'] # new parameter
-# 		launches_per_config = stage_settings['launches_per_config']
-# 		frame_chunk_size = stage_settings['frame_chunk_size']
-# 		restart_freq = stage_settings['restart_freq'] # New parameter
-# 		run_freq = stage_settings['run_freq'] # new parameter
-# 		num_reversals = int((end - begin)/stride)
+		colvars, colvars_params = namd_inputs._make_colvars_input(milestones, stage, i)
+		colvars_name = os.path.join(path,'colvars.script')
+		colvars.save(colvars_name)
 
-# 		namd_settings['inpfilename'] = inpname
-# 		namd_settings['outfilename'] = outname+".$replica_id"
-# 		namd_settings['coordinates'] = "../holo_wet.pdb" # this gets overwritten...
-# 		namd_settings['ambercoor'] = '' # this has to be disabled when coordinates are presented
-# 		namd_settings['velocities'] = ''
-# 		if bool(stage_settings['extract_xst']):
-# 			namd_settings['extendedsystem'] = "../ens_equil/ens_equil_0_1.restart.xsc"
-# 		namd_settings['bincoordinates'] = ""
-# 		namd_settings['binvelocities'] = ""
-# 		namd_settings['temperature'] = temperature
-# 		namd_settings['replicaUniformPatchGrids'] = 'on'
-# 		namd_settings['numsteps'] = ''
-# 		namd_settings['restartfreq'] = '$RESTART_FREQ'
-# 		#namd_settings['id'] = i
-# 		prelim_settings = {'temperature':temperature, 'num_reversals':num_reversals, 'restart_freq':restart_freq, 'run_freq':run_freq, 'begin':begin, 'stride':stride, 'launches_per_config':launches_per_config, 'frame_chunk_size':frame_chunk_size}
-# 		prelim_string = Adv_template(prelim_string_template,prelim_settings).get_output() # fill in the missing values
-# 		namd_settings['prelim_string'] = prelim_string
-# 		post_string_settings = {}
-# 		namd_settings['post_string'] = File_template(fwd_rev_template_location, post_string_settings).get_output()
+		post_string_settings = {
+			'prod_steps' : namd_settings['numsteps'],
+			'eval_stride' : namd_settings['eval_stride'],
+		}
 
-# 		inp, namd_params=namd_inputs.make_input(holo, ff, stage, temperature, write_freq, fixed=fixed, ensemble=ensemble, get_cell=get_cell, constraints=const, settings=namd_settings) #...
-# 		input_name = os.path.join(path, 'fwd_rev1.namd')
-# 		inp.save(input_name) 
-# 		param_filename=(os.path.join(path, 'namd_parameters.pkl'))   
-# 		param_file = open(param_filename, 'wb')
-# 		pickle.dump(namd_params, param_file)
-# 		param_file.close()
-# 		#make_fhpd_script(path, 'forward_template.namd', settings['fhpd_file'], number_of_neighbors=number_of_neighbors)
-# 		return os.path.join(stage, namd_settings['outfilename'])
+		anchor_milestone_params = _gen_anchor_milestone_params(milestones, i)
+		##TODO fix for multiple milestones
+		post_string_settings.update(anchor_milestone_params[0])
+
+		post_string_template = '''set crossing 		0
+set whoami 		none
+set incubation_time 		0
+set max_steps 		$prod_steps
+set EVAL_STRIDE 		$eval_stride
+
+set CURR_ANCHOR 		$curr_anchor
+set LOWER_ANCHOR 		$lower_anchor
+set LOWER_MILESTONE 		$lower_milestone_index
+set LOWER_BOUND 		$lower_bound
+set UPPER_ANCHOR 		$upper_anchor
+set UPPER_MILESTONE 		$upper_milestone_index
+set UPPER_BOUND 		$upper_bound
 
 
-def main(md_settings):
+
+
+
+for {set stepnum 0} {$stepnum < $max_steps} {incr stepnum $eval_stride} {
+  run $EVAL_STRIDE
+  set cv_val [cv colvar milestone1 value]
+
+  if {$cv_val <= $LOWER_BOUND} {
+    if {$rev_last} {
+      print "trajectory stuck"
+      }
+          puts "SEEKR: Cell Collision: current: $CURR_ANCHOR, new: $LOWER_ANCHOR, stepnum: $stepnum"
+          if {$whoami != $LOWER_MILESTONE} {
+            puts "SEEKR: Milestone Transition: anchor: $CURR_ANCHOR, source: $whoami, destination: $LOWER_MILESTONE, stepnum: $stepnum, incubation time: $incubation_time"
+            set incubation_time 0
+            }
+        revert
+        rescalevels -1
+        checkpoint
+        set rev_last True
+        set whoami $LOWER_MILESTONE
+
+    } elseif {$cv_val >= $UPPER_BOUND} {
+      if {$rev_last} {
+      print "trajectory stuck"
+      }
+        puts "SEEKR: Cell Collision: current: $CURR_ANCHOR, new: $UPPER_ANCHOR, stepnum: $stepnum"
+        if {$whoami != $UPPER_MILESTONE} {
+         puts "SEEKR: Milestone Transition: anchor: $CURR_ANCHOR, source: $whoami, destination: $UPPER_MILESTONE, stepnum: $stepnum, incubation time: $incubation_time"
+         set incubation_time 0
+         }
+        revert
+        rescalevels -1
+        checkpoint
+        set rev_last True
+        set whoami $UPPER_MILESTONE
+
+    } else {
+       checkpoint
+       set rev_last False
+       }
+   incr incubation_time $EVAL_STRIDE
+}
+'''
+
+		post_string = Adv_template(post_string_template,post_string_settings).get_output() # fill in the missing values
+		namd_settings['post_string'] = post_string
+		inp, namd_params=namd_inputs._make_input(holo, stage, ff,write_freq, ensemble=ensemble,  get_cell=get_cell, 
+			settings=namd_settings) #...
+		input_name = os.path.join(path, '%s_1.namd' % (stage))
+		inp.save(input_name)
+		param_filename=(os.path.join(path, 'namd_parameters.pkl'))
+		param_file = open(param_filename, 'wb')
+		pickle.dump(namd_params, param_file)
+		param_file.close()
+		return os.path.join(stage, namd_settings['outfilename'])
+
+
+
+def main(md_settings, milestones):
 	'''called by seekr, executes other necessary commands'''
 	anchor_list = md_settings['anchor_list']
 	ff= md_settings['ff']
 	for i in range(len(anchor_list)):
 		md_settings['index'] = i
+		print("creating files for anchor ", i)
 
 		if ff == 'amber':
-			md_settings['prmtop'], md_settings['inpcrd']= _prep_building(md_settings)
+			md_settings['prmtop'], md_settings['inpcrd'], md_settings['bincoor'], md_settings['xsc']= _prep_building(md_settings)
 		else:
 			print("only amber ff currently implemented")
-		equil_out = prep(md_settings, stage='equil', inpname='', )
+		equil_out = prep(md_settings, milestones, stage='equil', inpname=os.path.join('..','building/holo'), )
+		prod_out = prep(md_settings, milestones, stage='prod', inpname=os.path.join('..',equil_out), )
 		#inp, namd_params = namd_inputs._make_input(stage='equil',get_cell=False, settings=md_settings)
 		#input_name = os.path.join(md_settings['md_file_paths'][i]['equil'], 'equil_1.namd')
 		#inp.save(input_name)	
