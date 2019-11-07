@@ -136,7 +136,7 @@ def _calc_window_rmsd(conv_values):
     #print(RMSD)
     return RMSD
 
-def plot_window_rmsd(conv_values, conv_intervals, window, cutoff):
+def plot_window_rmsd(conv_values, conv_intervals, window,):
 	rmsd_list = []
 	fig, ax = plt.subplots()
 	new_colors = [plt.get_cmap('tab20')(1.* i/(_get_colormap(conv_values))) for i in range(_get_colormap(conv_values))]
@@ -161,3 +161,5 @@ def plot_window_rmsd(conv_values, conv_intervals, window, cutoff):
 	plt.legend(loc ='center left', bbox_to_anchor=(1, 0.5), ncol = 2)  
 	plt.grid(b=True,axis = 'y', which = 'both')
 	return fig, ax
+
+

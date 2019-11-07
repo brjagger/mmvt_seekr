@@ -1,5 +1,5 @@
 """
-make_model.py
+model.py
 Simulation Enabled Estimation of Kinetic Rates (SEEKR) is a tool that facilitates the preparation, running and analysis of multiscale MD/BD/Milestoning  simulations for the calculation of protein-ligand binding kinetics.
 
 extracts transition information from the simulation output files and creates the milestoning model
@@ -470,3 +470,5 @@ def read_transition_statistics_from_files(model, verbose):
         #  print "last anchor longer"
   
   return total_steps 
+
+

@@ -26,6 +26,8 @@ from math import exp, log
 import numpy as np
 from scipy import linalg as la
 from scipy.stats import gamma as gamma
+from itertools import islice
+
 
 R_GAS_CONSTANT = 0.0019872 # in kcal/mol*K
 k_boltz = 1.3806488e-23
@@ -33,7 +35,7 @@ k_boltz = 1.3806488e-23
 
 
 
-def analyze_kinetics(calc_type, model, bound_dict, max_steps =None, verbose=False,):
+def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=False,):
 	'''main function to perform all kinetics analyses.
 	Given a Model() object with its statistics filled out, it will return an estimate of the kinetic
 	value, given all or a subset of its statistics.
@@ -46,8 +48,18 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =None, verbose=Fals
 		for anchor in site.anchors:
 			if anchor.md == True and anchor.directory:
 				if verbose: print('Anchor', anchor.fullname)
-				this_counts, this_total_counts, this_total_times, this_avg_times = anchor.get_md_transition_statistics(model.md_time_factor, max_steps)
-				this_cell_counts, this_cell_time = anchor.get_md_vt_collisions(model.md_time_factor, max_steps)
+
+				#unpack the list of max steps for each anchor
+				if max_steps[0] == None:
+					anchor_max_steps = None
+				else:
+					anchor_max_steps = max_steps[int(anchor.index)]
+
+
+				this_counts, this_total_counts, this_total_times, this_avg_times = anchor.get_md_transition_statistics(model.md_time_factor, 
+						anchor_max_steps)
+				this_cell_counts, this_cell_time = anchor.get_md_vt_collisions(model.md_time_factor, anchor_max_steps)
+				
 				total_counts = add_dictionaries(total_counts, this_total_counts)
 				if verbose: print('counts',  this_counts)
 				total_cell_counts = add_dictionaries(total_cell_counts, this_cell_counts)
@@ -182,8 +194,8 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =None, verbose=Fals
 				#print counts[anchor][src][dest]
 				#print total_cell_times[int(anchor)]
 				N[src][dest] = p_equil[int(anchor)] * float(counts[anchor][src][dest])/ total_cell_times[int(anchor)]
-				if max_steps != None: 
-					if  total_cell_times[int(anchor)] >= max_steps * model.md_time_factor: 
+				if max_steps[0] != None: 
+					if  total_cell_times[int(anchor)] >= max_steps[int(anchor)] * model.md_time_factor: 
 						N_conv[src][dest] = float(counts[anchor][src][dest])/ total_cell_times[int(anchor)]
 					else:
 						N_conv[src][dest] = np.nan      
@@ -195,8 +207,8 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =None, verbose=Fals
 	for anchor in list(times.keys()):
 		for src in list(times[anchor].keys()): 
 			R[src] += (p_equil[int(anchor)] * times[anchor][src]/ total_cell_times[int(anchor)])
-			if max_steps != None:
-				if total_cell_times[int(anchor)] >= max_steps* model.md_time_factor:
+			if max_steps[0] != None:
+				if total_cell_times[int(anchor)] >= max_steps[int(anchor)] * model.md_time_factor:
 					R_conv[int(anchor)][src] = times[anchor][src]/ total_cell_times[int(anchor)] 
 				else:
 					R_conv[int(anchor)][src] = np.nan
@@ -336,14 +348,16 @@ def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, 
 	if verbose: print("final MCMC matrix", Q)
 	return k_off_list, running_avg, running_std 
 
-def check_milestone_convergence(model, bound_dict, conv_stride, max_steps, calc_type, verbose=False,):
+def check_milestone_convergence(model, bound_dict, conv_stride, skip, max_steps, calc_type, verbose=False,):
 	'''
 
 	'''
 	n_anchors = 0
 	for site in model.sites:
-		n_anchors += site.num_anchors	
+		n_anchors += site.num_anchors   
 	conv_intervals = np.arange(conv_stride, max_steps, conv_stride)
+	conv_intervals = conv_intervals + skip
+	max_step_list = np.zeros(n_anchors)
 	N_conv = np.zeros((15,15,len(conv_intervals)))
 	R_conv = np.zeros((15,15,len(conv_intervals)))
 	k_conv = np.zeros(len(conv_intervals))
@@ -351,8 +365,8 @@ def check_milestone_convergence(model, bound_dict, conv_stride, max_steps, calc_
 	p_equil_conv = np.zeros((15,len(conv_intervals)))
 
 	for interval_index in range(len(conv_intervals)):
-		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(calc_type, model, bound_dict, 
-			max_steps=conv_intervals[interval_index], verbose=verbose,)
+		max_step_list[:] = conv_intervals[interval_index]
+		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(calc_type, model, bound_dict, max_steps=max_step_list, verbose=verbose,)
 
 		MFPT = T[0]
 		k_off = 1/MFPT
@@ -383,8 +397,85 @@ def add_dictionaries(dict1, dict2):
 
 	return dict1
 
+def _calc_window_rmsd(conv_values):
+	#print(conv_values)
+	average = np.mean(conv_values)
+	#print(average)
+	test =conv_values - average
+	#print(test)
+	new_test = np.delete(test, 0)
+	#print(new_test)
+	RMSD = np.sqrt(np.sum(new_test)**2/(len(conv_values) -1))
+	#print(RMSD)
+	return RMSD, average
+
+
+def _find_conv_min(conv_values, conv_intervals, window_size, cutoff, conv_windows):
+
+	conv_times = np.zeros((conv_values.shape[0], conv_values.shape[1]))
+	#conv_times[:] = np.nan
+	for i in range(conv_values.shape[0]):
+		for j in range(conv_values.shape[1]):
+			if np.sum(conv_values[i][j][:]) != 0:
+				#print("I, J", i,j)
+				conv_times[i][j]= np.nan
+				rmsd_list = []
+				windows = _make_windows(conv_values[i][j][:], window_size)
+				index = 0
+				conv_counter = 0
+				for w in windows:
+					RMSD, window_average = _calc_window_rmsd(w)
+					#N_rmsd_list.append(RMSD)
+					#print(index)
+					#print(index)
+					#print(conv_counter, conv_windows)
+					if RMSD <= (cutoff * window_average):
+						#consider anchor converged
+						#print("RMSD less than cutoff", index, RMSD, window_average)
+						#print("Convergence meeasures:", conv_counter,"of",  conv_windows)
+						conv_counter += 1
+						#print("counter", conv_counter, "index", index)
+						if conv_counter == conv_windows:
+							#print("Entry %i , %i converged at index: %i" %(i,j,index))
+							max_int = index + window_size
+							min_time = conv_intervals[max_int]
+							#print(min_time)
+							conv_times[i][j]= min_time
+							break
+					else: conv_counter = 0
+					index += 1
+					
+				if np.isnan(conv_times[i][j]): print("Entry %i, %i did not meet minimum convergence criteria of %i windows" %(i,j,conv_windows))
+	return conv_times
+
+
+def calc_RMSD_conv(model, N_conv, R_conv, conv_intervals, window_size, cutoff, conv_windows):
+	min_anchor_times = np.zeros((len(N_conv[0])))
+	#print(min_anchor_times)
+	print("Calculating N/T convergence")
+	n_conv_times = _find_conv_min(N_conv, conv_intervals, window_size, cutoff, conv_windows)
+	print("Calculating R/T convergence")
+	r_conv_times = _find_conv_min(R_conv, conv_intervals, window_size, cutoff, conv_windows)
+	
+	#print(n_conv_times)
+	#print(r_conv_times)
 
 
 
+	for site in model.sites:
+		for anchor in site.anchors:
+			n_steps = 0
+			if np.isnan(r_conv_times[int(anchor.index)][:]).any():
+				continue
+			r_steps = max(r_conv_times[int(anchor.index)][:])
+			for milestone in anchor.milestones:
+				if np.isnan(n_conv_times[int(milestone.id)][:]).any():
+					continue
+				else:
+					if max(n_conv_times[int(milestone.id)][:]) > n_steps:               
+						n_steps = max(n_conv_times[int(milestone.id)][:])
+			min_anchor_times[int(anchor.index)] = max(n_steps, r_steps) 
+			print("anchor", anchor.index, min_anchor_times[int(anchor.index)])
 
 
+	return min_anchor_times
