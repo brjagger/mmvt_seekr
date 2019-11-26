@@ -396,7 +396,17 @@ def add_dictionaries(dict1, dict2):
 			dict1[key] = dict2[key]
 
 	return dict1
-
+def _make_windows(seq, n):
+    "Returns a sliding window (of width n) over data from the iterable"
+    "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
+        
 def _calc_window_rmsd(conv_values):
 	#print(conv_values)
 	average = np.mean(conv_values)
