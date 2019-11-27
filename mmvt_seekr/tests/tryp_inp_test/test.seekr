@@ -33,13 +33,13 @@ milestone1 [
 #	equil_rest_force 20, 
 #]
 
-###Anchor Equilibration Parameters##
+###Anchor Equilibration###
 equil 			True
 equil_ensemble		nvt
 equil_steps 		1000000
 equil_write_freq	10000
 
-###Production Parameters###
+###Production ###
 prod 				True
 prod_ensemble		nvt
 prod_steps			20000000
