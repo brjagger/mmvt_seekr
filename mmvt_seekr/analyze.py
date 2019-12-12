@@ -60,9 +60,9 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 						anchor_max_steps)
 				this_cell_counts, this_cell_time = anchor.get_md_vt_collisions(model.md_time_factor, anchor_max_steps)
 				
-				total_counts = add_dictionaries(total_counts, this_total_counts)
+				total_counts = _add_dictionaries(total_counts, this_total_counts)
 				if verbose: print('counts',  this_counts)
-				total_cell_counts = add_dictionaries(total_cell_counts, this_cell_counts)
+				total_cell_counts = _add_dictionaries(total_cell_counts, this_cell_counts)
 				total_cell_times[int(anchor.index)] = this_cell_time
 				if verbose: print('times', this_total_times)
 				if verbose: print('cell times', total_cell_times)
@@ -70,7 +70,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 				#total_cell_times = add_dictionaries(total_cell_times, this_cell_times)
 				for src_key in list(this_counts.keys()):
 					if src_key in list(counts.keys()):
-						counts[src_key] = add_dictionaries(counts[src_key], this_counts[src_key])
+						counts[src_key] = _add_dictionaries(counts[src_key], this_counts[src_key])
 					else:
 						counts[src_key] = this_counts[src_key]
 				#print "len(transitions)", len(milestone.transitions)
@@ -79,7 +79,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 					end_indeces.append(int(milestone.id))
 			for src_key in list(this_total_times.keys()):
 				if src_key in list(times.keys()):
-					times[src_key] = add_dictionaries(times[src_key], this_total_times[src_key])
+					times[src_key] = _add_dictionaries(times[src_key], this_total_times[src_key])
 				else:
 					times[src_key] = this_total_times[src_key]
 
@@ -240,7 +240,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 		if verbose: print(i, total_cell_times[i]*1e9, "ns")
 		total_sim_time += total_cell_times[i]
 
-	if verbose: print("Total simulation time: " ,  total_sim_time*1e9, "ns") 
+	 print("Total simulation time: " ,  total_sim_time*1e9, "ns") 
 
 	return p_equil, N, R, T, T_tot, Q, N_conv, R_conv, k_cell, 
 
@@ -383,7 +383,7 @@ def check_milestone_convergence(model, bound_dict, conv_stride, skip, max_steps,
 
 	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_conv, conv_intervals, 
 
-def add_dictionaries(dict1, dict2):
+def _add_dictionaries(dict1, dict2):
 	'''
 	adds the values numerically within each dictionary
 	NOTE: dict1 is updated and returned BY REFERENCE
