@@ -1,0 +1,45 @@
+### General System Info##
+project_name 				test_mmvt_inp
+rootdir					./data/mmvt_param_test
+
+##System Files###
+
+ff amber
+system_pdb_filename 		./tryp_inp_test/holo_leap.pdb
+system_parm_filename 		./tryp_inp_test/holo.parm7
+system_rst_filename		./tryp_inp_test/holo.rst7
+system_bin_coordinates		./tryp_inp_test/holo.coor
+extendedsystem_filename		./tryp_inp_test/holo.xsc
+system_psf_filename 		foo.psf
+lig_pqr_filename 		lig.pqr
+rec_dry_pqr_filename 		rec_dry.pqr
+watermodel			tip4p
+
+
+###Milestone Definition###
+milestone1 [
+	colvar_type distance,
+	group1 2479 2490 2500 2536 2719 2746 2770 2788 2795 2868 2927,
+	group2 3222 3223 3224 3225 3226 3227 3228 3229 3230 3231 3232 3233 3234 3235 3236 3237 3238 3239,
+	milestone_values 1 2 4 6 8 10 12 14,
+	equil_rest_force 50, 
+]
+
+#milestone2 [
+#	colvar_type distance,
+#	group1 2479 2490 2500 2536 2719 2746 2770 2788 2795 2868 2927,
+#	group2 3222 3223 3224 3225 3226 3227 3228 3229 3230 3231 3232 3233 3234 3235 3236 3237 3238 3239,
+#	milestone_values 1.5 2.5 3.5 4.5 5.5,
+#	equil_rest_force 20, 
+#]
+
+###Anchor Equilibration###
+equil 			True
+equil_ensemble		nvt
+equil_steps 		1000000
+equil_write_freq	10000
+
+###Production ###
+prod 				True
+prod_ensemble		nvt
+prod_steps			20000000
