@@ -28,7 +28,9 @@ from itertools import islice
 import xml.etree.cElementTree as ET
 from xml.dom.minidom import Document
 from xml.dom import minidom
-import filetree, md
+import pickle
+import filetree, md, bd
+import pdb2 as pdb
 
 inputs = { #contains all DEFAULT parameters for seekr input file
 	###Genaral Parameters###
@@ -45,6 +47,20 @@ inputs = { #contains all DEFAULT parameters for seekr input file
 	'eval_stride' : 10,	
 	'md_time_factor' : 2e-15,
 	'bd_time_factor' : 1,
+	'empty_pqrxml_path':"./empty.pqrxml",
+	'browndye_bin_dir':'',
+	'ion1rad':None,
+	'ion2rad':None,
+	'ion1conc':None,
+	'ion2conc':None,
+	'ions':[],
+	'lpbe_npbe':'lpbe',
+	'apbs_executable':'apbs',
+	'inputgen_executable':"/software/repo/moleculardynamics/apbs/2018.2.1/share/apbs/tools/manip/inputgen.py",
+	'inputgen_fadd':'100',
+	'inputgen_gmemceil':'64000',
+	'inputgen_resolution':'0.5',
+	'inputgen_cfac':'4.0',
 }
 
 
@@ -105,7 +121,9 @@ def _get_sys_params(inp):
 		'system_bin_coordinates':inp['system_bin_coordinates'],
 		'extendedsystem':inp['extendedsystem_filename'],
 		'lig_pqr_filename':inp['lig_pqr_filename'], #for BD simulations
+		'rec_dry_pdb_filename':inp['rec_dry_pdb_filename'],
 		'rec_dry_pqr_filename':inp['rec_dry_pqr_filename'], #for BD simulations
+		'rec_pdb_filename':inp['rec_pdb_filename'],
 		'empty_rootdir':_boolean(inp['empty_rootdir']),
 		'md_time_factor': inp['md_time_factor'],
 		'bd_time_factor' : inp['bd_time_factor'],
@@ -147,6 +165,72 @@ def _get_md_settings(inp, md_file_paths):
 		}
 
 	return md_settings
+
+def _get_bd_settings(inp, sys_params, struct):
+
+	#parser = pdb2.Big_PDBParser()
+	#bd_receptor_dry_pqr=parser.get_structure('bd_receptor_dry_pqr', sys_params['bd_rec_pqr_filename'], pqr=True)
+
+
+	bd_settings={ # settings for the bd model
+	'rec_struct':struct['receptor_dry_pqr'],
+	'lig_struct': struct['ligand'],
+	'temperature':inp['master_temperature'],
+	'threads':int(inp['bd_threads']),
+	#'fhpd_numtraj':inp['fhpd_numtraj'],
+	# reaction sites information in milestone_settings below
+	'browndye_bin_dir':inp['browndye_bin_dir'],
+	#'bd_file_paths':bd_file_paths,
+	'b_surface_path':os.path.join(sys_params['rootdir'], 'b_surface'),
+	#'prods_per_anchor':inp['bd_prods_per_anchor'],
+	#'starting_surfaces':[], # x,y,z,radius
+	#'ending_surfaces':[], # x,y,z,radius
+	'b_surface_ending_surfaces':[], # when the ligand is started from the b-surface, where it can possibly end
+	'siteids':[],
+	#'starting_conditions':'configs', # may be 'spheres' or 'configs'. 'spheres': the ligands are started at random points along the starting_surfaces and then classified into states. 'configs' take configurations from 'lig_configs'
+	#'increments':[],
+	#'milestones':milestone_list,
+	#'milestone_pos_rot_list':milestone_pos_rot_list,
+	'empty_pqrxml_path':inp['empty_pqrxml_path'],
+	'apbs_settings':{
+	  'apbs_executable':inp['apbs_executable'],
+	  'ions':[],
+	  #'ion1rad':inp['ion1rad'], # negative ion
+	  #'ion2rad':inp['ion2rad'], # positive ion
+	  #'ion1conc':inp['ion1conc'],
+	  #'ion2conc':inp['ion2conc'],
+	  'temp':inp['master_temperature'],
+	},
+	'inputgen_settings':{
+	  'inputgen_executable':inp['inputgen_executable'],
+	  'fadd':inp['inputgen_fadd'],
+	  'gmemceil':inp['inputgen_gmemceil'],
+	  'resolution':inp['inputgen_resolution'],
+	  'cfac':inp['inputgen_cfac'],
+	},
+	}
+
+	for key in sorted(inp.keys()):
+		if re.match("ion[0-9]+$", key): # then this is an ion
+	  		ion_dict = {'key':key}
+	  		for param in inp[key].split(','): # then pull every string in the list and make a dictionary
+	  			split_param = param.strip().split()
+	  			if len(split_param) < 2: continue
+	  			ion_key = split_param[0]
+	  			ion_value = ' '.join(split_param[1:])
+	  			ion_dict[ion_key] = ion_value
+  			bd_settings['apbs_settings']['ions'].append(ion_dict)
+	  
+	if inp['ion1conc'] and inp['ion1rad']: # if the old syntax is used
+		assert len(bd_settings['apbs_settings']['ions'])==0, "Cannot use 'ion#' parameter at the same time that you are using 'ion1conc' and 'ion1rad' parameters."
+		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion1conc'], 'charge': '-1.0', 'radius': inp['ion1rad'], 'name': 'ion1', 'key': 'ion1'})
+		if inp['ion2conc'] and inp['ion2rad']:
+	  		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion2conc'], 'charge': '1.0', 'radius': inp['ion2rad'], 'name': 'ion2', 'key': 'ion2'})
+	
+	print("bd_settings['apbs_settings']['ions']:", bd_settings['apbs_settings']['ions'])
+
+
+	return bd_settings
 
 def _boolean(arg):
 	if str(arg).lower() in ("false","", "0", "0.0", "[]", "()", "{}"):
@@ -328,6 +412,51 @@ def _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths):
 
 	return anchor_list
 
+def _load_structures(inp, sys_params,):
+	'''load protein/ligand structures needed for calculation'''
+	parser = pdb.Big_PDBParser()
+	print("now loading structures")
+
+	# Read and/or create pickle files for the structures to save I/O time
+	ligand_pkl_filename = os.path.join(inp['rootdir'], "ligand.pkl")
+	receptor_pkl_filename = os.path.join(inp['rootdir'], "receptor.pkl")
+	receptor_pkl_dry_filename = os.path.join(inp['rootdir'], "receptor_dry.pkl")
+	receptor_pkl_dry_pqr_filename = os.path.join(inp['rootdir'], "receptor_dry_pqr.pkl")
+
+	ligand=pickle_or_load(sys_params['lig_pqr_filename'], ligand_pkl_filename, struc_name="ligand", pqr=True)
+	receptor=pickle_or_load(sys_params['rec_pdb_filename'], receptor_pkl_filename, struc_name="receptor", pqr=False)
+	receptor_dry=pickle_or_load(sys_params['rec_dry_pdb_filename'], receptor_pkl_dry_filename, struc_name="receptor_dry", pqr=False)
+	receptor_dry_pqr=pickle_or_load(sys_params['rec_dry_pqr_filename'], receptor_pkl_dry_pqr_filename, struc_name="receptor_dry_pqr", pqr=True)
+
+	struct={ # all parameters pertaining to structure
+		'ligand':ligand,
+		'receptor':receptor,
+		'receptor_dry':receptor_dry, # or create a function that will remove all waters, complicated by ions
+		'receptor_dry_pqr':receptor_dry_pqr,
+		'rec_com':pdb.center_of_mass(receptor_dry), # have to take into account the center of mass of the receptor itself
+		'lig_com':pdb.center_of_mass(ligand), # have to take into account the center of mass of the ligand itself
+	}
+
+	return struct
+
+def pickle_or_load(filename, picklename, struc_name="pickle",pqr=False):
+	'''for large files, instead of parsing, they can be saved and loaded much more quickly as a pickle. '''
+	parser = pdb.Big_PDBParser()
+	if os.path.exists(picklename) and os.path.getmtime(picklename) > os.path.getmtime(filename): # if the pickle has been most recently modified
+		# load the pickle
+		print("reading pickle:", picklename)
+		our_file=open(picklename, 'rb')
+		our_obj=pickle.load(our_file)
+		our_file.close()
+	else:
+		# then load the file itself and save the pickle
+		our_obj=parser.get_structure(struc_name, filename, pqr=pqr, conventional=False) # load the file
+		print("writing pickle:", picklename)
+		our_file=open(picklename, 'wb')
+		pickle.dump(our_obj, our_file, protocol=-1)
+		our_file.close()
+	return our_obj
+
 def prepare_seekr():
 	parser = argparse.ArgumentParser(description="top level SEEKR program used to prepare and generate all input files necessary for a SEEKR calculation")
 	parser.add_argument('input_filename', metavar='INPUT_FILENAME', type = str, help="name of SEEKR input file")
@@ -341,7 +470,6 @@ def prepare_seekr():
 	# TODO generate anchor lists for multiple milestone CV's
 	# TODO BD milestones
 	#print(milestones)
-	print(md_anchor_list)
 	_generate_filetree(inputs, sys_params) #creates/clears top level ditectory
 	filetree_settings = _get_filetree_settings(md_anchor_list)
 	md_filetree_settings_all = {**filetree_settings, **sys_params}
@@ -349,6 +477,15 @@ def prepare_seekr():
 	md_settings = _get_md_settings(inputs, md_file_paths) #parse parameters for MD simulations from input file
 	md_settings_all = {**md_settings, **sys_params, **filetree_settings,}
 	md.main(md_settings_all, milestones)
+
+	structures = _load_structures(inputs, sys_params)
+	bd_settings = _get_bd_settings(inputs, sys_params, structures)
+
+	bd.main(bd_settings)
+
+
+
+
 	milestone_filename= os.path.join(sys_params['rootdir'], 'milestones.xml') 
 	anchor_list = _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths,)
 	print(anchor_list)

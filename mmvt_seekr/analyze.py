@@ -240,7 +240,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 		if verbose: print(i, total_cell_times[i]*1e9, "ns")
 		total_sim_time += total_cell_times[i]
 
-	 print("Total simulation time: " ,  total_sim_time*1e9, "ns") 
+	print("Total simulation time: " ,  total_sim_time*1e9, "ns") 
 
 	return p_equil, N, R, T, T_tot, Q, N_conv, R_conv, k_cell, 
 
