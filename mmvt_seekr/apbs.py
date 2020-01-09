@@ -192,7 +192,7 @@ def main(pqr_filename,inputgen_settings={},apbs_settings={},):
   # make APBS input file using template (disabled)
   #input_filename
   # make DX grids
-  #print 'INPUT FILENAME', input_filename
+  print 'INPUT FILENAME', input_filename
   apbs_out=pqr_filename+'.out' # make a default apbs output file
   # use the inputgen-generated file to make our own, more customized file
   apbs_params = scrape_inputfile(input_filename)

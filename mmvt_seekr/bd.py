@@ -220,8 +220,7 @@ def main(settings):
 		b_surface_criteria.append({'centerx':site['x'], 'centery':site['y'], 'centerz':site['z'], 'ligx':lig_center[0], 
 			'ligy':lig_center[1], 'ligz':lig_center[2], 'radius':site['radius'], 'index':site['index'], 'siteid':site['siteid']}) # add every site to the criteria list
 	print("bsurface_criteria:", b_surface_criteria)
-	b_surface_pqrxmls = _write_browndye_input(pqrs, settings, b_surface_criteria, work_dir=b_surface_path, 
-		browndye_bin=browndye_bin, start_at_site='false',) # write input for this part
+	b_surface_pqrxmls = _write_browndye_input(pqrs, settings, b_surface_criteria, work_dir=b_surface_path,	browndye_bin=browndye_bin, start_at_site='false',) # write input for this part
 
 
 
