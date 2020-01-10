@@ -129,6 +129,7 @@ def make_apbs_input_using_template (new_apbs_params, apbs_file_location="apbs.in
   apbs_params.update(default_apbs_params) # populate with default values
   apbs_params.update(new_apbs_params) # populate with new parameters
   apbs_input = File_template(apbs_input_template_location, apbs_params) # fill parameters into the template to make apbs file
+  print('APBS file loc', apbs_file_location)
   apbs_input.save(apbs_file_location) # save the apbs input file
   return
 
@@ -192,7 +193,7 @@ def main(pqr_filename,inputgen_settings={},apbs_settings={},):
   # make APBS input file using template (disabled)
   #input_filename
   # make DX grids
-  print 'INPUT FILENAME', input_filename
+  print('INPUT FILENAME', input_filename)
   apbs_out=pqr_filename+'.out' # make a default apbs output file
   # use the inputgen-generated file to make our own, more customized file
   apbs_params = scrape_inputfile(input_filename)
@@ -203,6 +204,7 @@ def main(pqr_filename,inputgen_settings={},apbs_settings={},):
   apbs_params.update(apbs_settings)
   new_input_filename = pqr_filename + '.in'
   dx = pqr_filename + '.dx'
+  print(os.getcwd())
   make_apbs_input_using_template(apbs_params, new_input_filename)
   #if not fhpd_mode:
   run_apbs(apbs_location, new_input_filename, pqr_filename, std_out=apbs_out) # save the electrostatic grid

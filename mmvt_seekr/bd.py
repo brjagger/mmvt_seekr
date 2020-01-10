@@ -93,7 +93,7 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 		debyes.append(debye)
 		pqrxmlfile = pqr2xml(pqrfile, pqr2xml_program=os.path.join(browndye_bin, 'pqr2xml')) # call the pqrxml program using the Browndye software suite
 		pqrxmls.append(pqrxmlfile)
-		molecule_xml = deepcopy(default_browndye_molecule_block) # create a copy of the molecule block, keep the default solute dielectric
+		molecule_xml = copy.deepcopy(default_browndye_molecule_block) # create a copy of the molecule block, keep the default solute dielectric
 		molecule_xml['apbs-grids']['grid']=os.path.basename(dxfile)
 		molecule_xml['prefix'] = prefix
 		molecule_xml['atoms'] = os.path.basename(pqrxmlfile)
@@ -136,6 +136,17 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 	input_file.close()
 
 	return pqrxmls
+
+def pqr2xml(pqrfile, pqr2xml_program='pqr2xml'):
+  '''simply runs the pqr2xml program that comes with Browndye.'''
+  #print "pqr2xml_program:", pqr2xml_program
+  no_ext = os.path.splitext(pqrfile)[0] # get everything but the extension
+  xmlfile = no_ext + '.pqrxml'
+  command = '%s < %s > %s' % (pqr2xml_program, pqrfile, xmlfile)
+  #if verbose: print("now running command:", command)
+  result = os.system(command) # run the pqr2xml program
+  if result != 0: raise Exception("There was a problem running pqr2xml")
+  return xmlfile
 
 def make_rxn_criteria(criteria,pqrs):
 	''' takes the rxn criteria pairs and makes ghost atoms in each structure, then populates a rxn file
