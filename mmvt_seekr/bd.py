@@ -127,17 +127,17 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 	input_xml['root']['n-threads'] = settings['threads']
 	input_xml['root']['n-trajectories'] = settings['prods_per_anchor']
 	input_xml['root']['start-at-site'] = start_at_site
-	if fhpd_mode:
-		input_xml['root']['seed'] = "$RANDOM"
-		input_xml['root']['include-desolvation-forces'] = "true"
-		del input_xml['root']['molecule1']['apbs-grids'] # remove the apbs-grid because we have no desolvation forces
-		input_xml['root']['molecule0']['prefix'] = "$REC"
-		input_xml['root']['molecule0']['atoms'] = "$REC.pqrxml"
-		input_xml['root']['molecule0']['apbs-grids']['grid'] = "$RECDX"
-		input_xml['root']['molecule1']['prefix'] = "$LIG"
-		input_xml['root']['molecule1']['atoms'] = "$LIG.pqrxml"
-		input_xml['root']['reactions'] = "$RXN"
-		input_xml['root']['n-trajectories'] = "$NTRAJ"
+	# if fhpd_mode:
+	# 	input_xml['root']['seed'] = "$RANDOM"
+	# 	input_xml['root']['include-desolvation-forces'] = "true"
+	# 	del input_xml['root']['molecule1']['apbs-grids'] # remove the apbs-grid because we have no desolvation forces
+	# 	input_xml['root']['molecule0']['prefix'] = "$REC"
+	# 	input_xml['root']['molecule0']['atoms'] = "$REC.pqrxml"
+	# 	input_xml['root']['molecule0']['apbs-grids']['grid'] = "$RECDX"
+	# 	input_xml['root']['molecule1']['prefix'] = "$LIG"
+	# 	input_xml['root']['molecule1']['atoms'] = "$LIG.pqrxml"
+	# 	input_xml['root']['reactions'] = "$RXN"
+	# 	input_xml['root']['n-trajectories'] = "$NTRAJ"
 
 
 	# set number of steps,copies,trajectory outputs, etc
@@ -149,6 +149,45 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 	input_file.close()
 
 	return pqrxmls
+
+class dict2xml(object):
+
+
+    def __init__(self, structure):
+        if len(structure) == 1:
+            self.doc     = Document()
+            rootName    = str(structure.keys()[0])
+            self.root   = self.doc.createElement(rootName)
+
+            self.doc.appendChild(self.root)
+            self.build(self.root, structure[rootName])
+
+    def build(self, father, structure):
+        if type(structure) == dict:
+            for k in structure:
+                tag = self.doc.createElement(k)
+                father.appendChild(tag)
+                self.build(tag, structure[k])
+
+        elif type(structure) == list:
+            grandFather = father.parentNode
+            tagName     = father.tagName
+            grandFather.removeChild(father)
+            for l in structure:
+                tag = self.doc.createElement(tagName)
+                self.build(tag, l)
+                grandFather.appendChild(tag)
+
+        else:
+            data    = str(structure)
+            tag     = self.doc.createTextNode(data)
+            father.appendChild(tag)
+
+    def display(self):
+        print self.doc.toprettyxml(indent="  ")
+
+    def text(self):
+        return self.doc.toprettyxml(indent="  ")
 
 def pqr2xml(pqrfile, pqr2xml_program='pqr2xml'):
   '''simply runs the pqr2xml program that comes with Browndye.'''
