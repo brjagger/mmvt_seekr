@@ -8,7 +8,7 @@ creates the necessary files to run a BD simulation using Browndye
 
 '''
 
-import sys, os, math, shutil, subprocess, glob #, make_fxd
+import sys, os, math, shutil, subprocess, glob, random #, make_fxd
 import numpy as np
 import pdb2 as pdb
 import copy  # needed to keep track of separate structure objects
@@ -18,6 +18,11 @@ import xml.etree.cElementTree as ET # for writing xml files
 from xml.dom import minidom
 from adv_template import Adv_template, File_template
 import apbs
+
+RXN_FILENAME = 'rxns.xml'
+INPUT_FILENAME = 'input.xml'
+DEFAULT_TEMP = 298.0
+empty_pqrxml = "./empty.pqrxml"
 
 default_browndye_params = {
 	'root':{
@@ -63,6 +68,14 @@ default_browndye_params = {
 		'n-threads':'1',
 		#'min-rxn-coord-file':'min_coord',
 	},
+}
+
+default_browndye_molecule_block = { # for each diffusing molecule, creates this block
+      'prefix':'prot0',
+      'atoms':'prot0.pqrxml',
+      'apbs-grids': {
+        'grid':'prot0.dx',
+      }
 }
 
 def prettify(elem):
