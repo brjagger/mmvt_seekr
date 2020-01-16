@@ -14,6 +14,7 @@ import pdb2 as pdb
 import copy  # needed to keep track of separate structure objects
 import unittest
 import re
+from xml.dom.minidom import Document
 import xml.etree.cElementTree as ET # for writing xml files
 from xml.dom import minidom
 from adv_template import Adv_template, File_template
@@ -125,7 +126,7 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 	input_xml['root']['reactions'] = RXN_FILENAME
 	input_xml['root']['solvent']['kT'] = float(settings['temperature']) / DEFAULT_TEMP
 	input_xml['root']['n-threads'] = settings['threads']
-	input_xml['root']['n-trajectories'] = settings['prods_per_anchor']
+	input_xml['root']['n-trajectories'] = settings['n-trajectories']
 	input_xml['root']['start-at-site'] = start_at_site
 	# if fhpd_mode:
 	# 	input_xml['root']['seed'] = "$RANDOM"
@@ -156,7 +157,7 @@ class dict2xml(object):
     def __init__(self, structure):
         if len(structure) == 1:
             self.doc     = Document()
-            rootName    = str(structure.keys()[0])
+            rootName    = str(list(structure.keys())[0])
             self.root   = self.doc.createElement(rootName)
 
             self.doc.appendChild(self.root)
@@ -184,7 +185,7 @@ class dict2xml(object):
             father.appendChild(tag)
 
     def display(self):
-        print self.doc.toprettyxml(indent="  ")
+        print(self.doc.toprettyxml(indent="  "))
 
     def text(self):
         return self.doc.toprettyxml(indent="  ")
@@ -241,12 +242,12 @@ def make_rxn_criteria(criteria,pqrs):
 			ghost1_ids[(criteria[i]['ligx'], criteria[i]['ligy'], criteria[i]['ligz'])] = ghost1_id
 
 
-		siteid = criteria[i]['siteid']
-		index = criteria[i]['index']
+		#siteid = criteria[i]['siteid']
+		#index = criteria[i]['index']
 		# now add to the xml file
 		reaction_list.append(ET.SubElement(reactions, "reaction"))
 		name=ET.SubElement(reaction_list[-1],"name")
-		name.text = "%s_%s" % (siteid,index)
+		name.text = "bind"
 		state_before = ET.SubElement(reaction_list[-1], "state-before")
 		state_before.text = "start"
 		state_after = ET.SubElement(reaction_list[-1], "state-after")
@@ -258,18 +259,29 @@ def make_rxn_criteria(criteria,pqrs):
 		atoms = ET.SubElement(pair, "atoms")
 		atoms.text = "%d %d" % (ghost0_id, ghost1_id)
 		distance = ET.SubElement(pair, "distance")
-		distance.text = "%f" % (radius,)
+		distance.text = "%f" % (float(radius))
 
 	criteria_xml = prettify(roottag)
 	return criteria_xml
 
-
+def create_ghost_atom_in_pqr(pqr,x,y,z):
+	'''given a pqr structure, will append a ghost atom at the location x,y,z,
+	where x,y,z are float() values.'''
+	atomid = int(pqr.atoms[-1].index) + 1 # get the last atom index
+	resid = int(pqr.atoms[-1].resid) + 1
+	print( "GHOST atom being added: numbered:", atomid)
+	ghostatom = pdb.Atom(record='ATOM', index=atomid, name="GHO", altloc="", resname="GHO", chain="", resid=resid, icode='', x=x, y=y, z=z, charge='0.0', radius='0.0', occupancy='0.0', beta='0.0', element='')
+	pqr.atoms.append(ghostatom)
+	pqr.num_atoms += 1
+	pqr.num_resids += 1
+	return atomid
 
 
 def main(settings):
 
 	rec_struct = settings['rec_struct']
 	lig_struct = settings['lig_struct']
+	lig_center = pdb.center_of_mass(lig_struct)
 	browndye_bin = settings['browndye_bin_dir']
 	empty_pqrxml = os.path.abspath(settings['empty_pqrxml_path'])
 
@@ -278,10 +290,7 @@ def main(settings):
 	b_surface_path = settings['b_surface_path']
 	if not os.path.exists(b_surface_path): os.mkdir(b_surface_path)
 	b_surface_criteria = []
-
-	for site in settings['b_surface_ending_surfaces']:
-		b_surface_criteria.append({'centerx':site['x'], 'centery':site['y'], 'centerz':site['z'], 'ligx':lig_center[0], 
-			'ligy':lig_center[1], 'ligz':lig_center[2], 'radius':site['radius'], 'index':site['index'], 'siteid':site['siteid']}) # add every site to the criteria list
+	b_surface_criteria.append({'centerx':settings['bd_centerx'], 'centery':settings['bd_centery'], 'centerz':settings['bd_centerz'], 'ligx':lig_center[0], 'ligy':lig_center[1], 'ligz':lig_center[2], 'radius':settings['bd_radius']} ) # add every site to the criteria list
 	print("bsurface_criteria:", b_surface_criteria)
 	b_surface_pqrxmls = _write_browndye_input(pqrs, settings, b_surface_criteria, work_dir=b_surface_path,	browndye_bin=browndye_bin, start_at_site='false',) # write input for this part
 
