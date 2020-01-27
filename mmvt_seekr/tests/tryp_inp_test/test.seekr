@@ -51,8 +51,12 @@ prod_steps			20000000
 ##############################################################
 browndye_bin_dir  /software/repo/moleculardynamics/browndye/2018.5.1/bin
 empty_pqrxml_path ./empty.pqrxml
+bd_radius 14 
+bd_centerx -6.375
+bd_centery -4.430
+bd_centerz 33.944
 bd_threads 10
-bd_prods_per_anchor 1000000
+n-trajectories 1000000
 
 ##############################################################
 # APBS Parameters

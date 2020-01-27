@@ -176,15 +176,20 @@ def _get_bd_settings(inp, sys_params, struct):
 	'rec_struct':struct['receptor_dry_pqr'],
 	'lig_struct': struct['ligand'],
 	'temperature':inp['master_temperature'],
+	'bd_centerx':inp['bd_centerx'],
+	'bd_centery':inp['bd_centery'],
+	'bd_centerz':inp['bd_centerz'],
 	'threads':int(inp['bd_threads']),
 	#'fhpd_numtraj':inp['fhpd_numtraj'],
 	# reaction sites information in milestone_settings below
 	'browndye_bin_dir':inp['browndye_bin_dir'],
 	#'bd_file_paths':bd_file_paths,
 	'b_surface_path':os.path.join(sys_params['rootdir'], 'b_surface'),
+	'bd_radius':inp['bd_radius'],
 	#'prods_per_anchor':inp['bd_prods_per_anchor'],
 	#'starting_surfaces':[], # x,y,z,radius
 	#'ending_surfaces':[], # x,y,z,radius
+        'n-trajectories':inp['n-trajectories'],
 	'b_surface_ending_surfaces':[], # when the ligand is started from the b-surface, where it can possibly end
 	'siteids':[],
 	#'starting_conditions':'configs', # may be 'spheres' or 'configs'. 'spheres': the ligands are started at random points along the starting_surfaces and then classified into states. 'configs' take configurations from 'lig_configs'
@@ -477,18 +482,14 @@ def prepare_seekr():
 	md_settings = _get_md_settings(inputs, md_file_paths) #parse parameters for MD simulations from input file
 	md_settings_all = {**md_settings, **sys_params, **filetree_settings,}
 	md.main(md_settings_all, milestones)
+	print(milestones[-1])
+	milestone_filename= os.path.join(sys_params['rootdir'], 'milestones.xml') 
+	anchor_list = _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths,)
+	print('Anchor List',anchor_list)
 
 	structures = _load_structures(inputs, sys_params)
 	bd_settings = _get_bd_settings(inputs, sys_params, structures)
-
 	bd.main(bd_settings)
-
-
-
-
-	milestone_filename= os.path.join(sys_params['rootdir'], 'milestones.xml') 
-	anchor_list = _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths,)
-	print(anchor_list)
 	_write_milestone_file(anchor_list, md_settings['master_temperature'], 
 		sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
 
