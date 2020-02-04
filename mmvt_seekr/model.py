@@ -328,26 +328,6 @@ class Anchor():
 
       return cell_counts, total_time
 
-   def get_bd_transition_statistics(self, results_filename="results.xml", bd_time=0.0):
-    'read the BD results.xml file for the anchors to determine transition statistics and times for the BD stage'
-    bd_results_filename = os.path.join(self.directory, results_filename)
-    counts = {}
-    total_counts = {}
-    total_times = {}
-    avg_times = {}
-    src_key = '%s_%s' % (self.sitename, self.index)
-    counts[src_key], total_times[src_key] = parse_bd_results(bd_results_filename)
-    total_counts[src_key] = 0
-    for dest_key in counts[src_key].keys():
-      total_counts[src_key] += counts[src_key][dest_key]
-    if total_times[src_key] == None:
-      avg_times[src_key] = bd_time
-      total_times[src_key] = bd_time
-    else:
-      avg_times[src_key] = total_times[src_key] / total_counts[src_key]
-    
-    return counts, total_counts, total_times, avg_times
-
 class Milestone():
    """ Object representing a single milestone
 
@@ -380,7 +360,6 @@ class Milestone():
       #self.site = siteindex
       #self.sitename = sitename
       self.transitions = [] # all the transition statistics associated with this milestone
-
 
 class Collision():
    """Object representing a collision with a voronoi cell edge
@@ -529,9 +508,7 @@ def parse_milestoning_file(milestoning_filename):
       model.add_site(site_obj)
       site_counter += 1 
 
-
-     bd_index = model.num_milestones + 1
-     model.b_surface = Anchor(index="0", shape="sphere", end="True", md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
+     #model.b_surface_milestone = Anchor(index="0", shape="sphere", end="True", md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
 
    return model 
 
@@ -549,31 +526,32 @@ def add_dictionaries(dict1, dict2):
 
    return dict1
 
-def parse_bd_results(bd_results_filename):
-   ''' given a BD results file name, will open the file and extract information about state transitions'''
-   bd_dict = {}
-   bd_time = None
-   tree = ET.parse(bd_results_filename)
-   root = tree.getroot()
-   for tag in root:
-      if tag.tag == "reactions":
-         reactions = tag
-     for tag2 in reactions:
-      i = 0
-      if tag2.tag == "escaped":
-        bd_dict['inf'] = int(tag2.text)
-      elif tag2.tag == "completed":
-        site = tag2[0].text.strip()
-        #print "site:", site
-        n = tag2[1].text
-        #print "n:", n
-        #name = outer_state[i] + '_' + str(site)
-        bd_dict[site] = int(n)
-        i += 1
-      elif tag2.tag == "time":
-        bd_time = float(tag2.text)
+# def parse_bd_results(bd_results_filename):
+#    ''' given a BD results file name, will open the file and extract information about state transitions'''
+#    #bd_results_file = open(bd_results_filename, 'r')
+#    bd_dict = {}
+#    bd_time = None
+#    tree = ET.parse(bd_results_filename)
+#    root = tree.getroot()
+#    for tag in root:
+#       if tag.tag == "reactions":
+#          reactions = tag
+#      for tag2 in reactions:
+#       i = 0
+#       if tag2.tag == "escaped":
+#         bd_dict['inf'] = int(tag2.text)
+#       elif tag2.tag == "completed":
+#         site = tag2[0].text.strip()
+#         #print "site:", site
+#         n = tag2[1].text
+#         #print "n:", n
+#         #name = outer_state[i] + '_' + str(site)
+#         bd_dict[site] = int(n)
+#         i += 1
+#       elif tag2.tag == "time":
+#         bd_time = float(tag2.text)
 
-   return bd_dict, bd_time
+#    return bd_dict, bd_time
 
 def parse_bound_state_args(bound_args):
    """Parses a user-defined string corresponding to all bound states
@@ -640,8 +618,7 @@ def read_transition_statistics_from_files(model, verbose):
             if max_steps > total_steps:
               total_steps = max_steps
   
-   return total_step
-
+   return total_steps 
 
 def make_model( milestone_filename="milestones.xml", bound_states="0", verbose=False):
    """ Top level function used to parse inputs and create the milestoning model
