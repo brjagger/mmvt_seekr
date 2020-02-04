@@ -185,11 +185,12 @@ def _get_bd_settings(inp, sys_params, struct):
 	'browndye_bin_dir':inp['browndye_bin_dir'],
 	#'bd_file_paths':bd_file_paths,
 	'b_surface_path':os.path.join(sys_params['rootdir'], 'b_surface'),
-	'bd_radius':inp['bd_radius'],
+	'bd_milestone_path':os.path.join(sys_params['rootdir'], 'bd_milestone'),
+	#'bd_radius':inp['bd_radius'],
 	#'prods_per_anchor':inp['bd_prods_per_anchor'],
 	#'starting_surfaces':[], # x,y,z,radius
 	#'ending_surfaces':[], # x,y,z,radius
-        'n-trajectories':inp['n-trajectories'],
+    'n-trajectories':inp['n-trajectories'],
 	'b_surface_ending_surfaces':[], # when the ligand is started from the b-surface, where it can possibly end
 	'siteids':[],
 	#'starting_conditions':'configs', # may be 'spheres' or 'configs'. 'spheres': the ligands are started at random points along the starting_surfaces and then classified into states. 'configs' take configurations from 'lig_configs'
@@ -472,6 +473,7 @@ def prepare_seekr():
 	sys_params = _get_sys_params(inputs) #parse general system parameters (structures, forcefield files, directory names from input file)
 	md_milestones = _parse_milestone_inputs(inputs) #parse milestone CV parameters and milestone values from input file
 	milestones, md_anchor_list = _generate_milestone_lists(md_milestones) #generate upper/lower bounds of a SINGLE CV for each anchor/Voronoi celli
+
 	# TODO generate anchor lists for multiple milestone CV's
 	# TODO BD milestones
 	#print(milestones)
@@ -489,6 +491,21 @@ def prepare_seekr():
 
 	structures = _load_structures(inputs, sys_params)
 	bd_settings = _get_bd_settings(inputs, sys_params, structures)
+	bd_milestone = anchor_list[-1]
+	print(bd_milestone)
+	#bd_milestone_pair = bd_milestone['%s_pair_list' %bd_milestone['key']][-1]
+	bd_lower_bound = bd_milestone['milestone_params'][0]['lower_bound']
+	bd_lower_bound_index = bd_milestone['milestone_params'][0]['lower_milestone_index']
+	bd_index = bd_milestone['milestone_params'][0]['upper_milestone_index']
+	b_surf_distance = bd_milestone['milestone_params'][0]['upper_bound']
+	#bd_milestone_index = 
+	bd_settings.update({'b_surf_distance' : b_surf_distance,
+		'bd_lower_bound' : bd_lower_bound,
+		'bd_lower_bound_index' : bd_lower_bound_index,
+		'bd_index': bd_index,
+		})
+
+	print("BD b surface distance", b_surf_distance)
 	bd.main(bd_settings)
 	_write_milestone_file(anchor_list, md_settings['master_temperature'], 
 		sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
