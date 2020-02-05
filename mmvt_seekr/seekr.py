@@ -61,6 +61,7 @@ inputs = { #contains all DEFAULT parameters for seekr input file
 	'inputgen_gmemceil':'64000',
 	'inputgen_resolution':'0.5',
 	'inputgen_cfac':'4.0',
+	'fhpd_numtraj':'1000',
 }
 
 
@@ -180,7 +181,7 @@ def _get_bd_settings(inp, sys_params, struct):
 	'bd_centery':inp['bd_centery'],
 	'bd_centerz':inp['bd_centerz'],
 	'threads':int(inp['bd_threads']),
-	#'fhpd_numtraj':inp['fhpd_numtraj'],
+	'fhpd_numtraj':inp['fhpd_numtraj'],
 	# reaction sites information in milestone_settings below
 	'browndye_bin_dir':inp['browndye_bin_dir'],
 	#'bd_file_paths':bd_file_paths,

@@ -1,20 +1,20 @@
 ### General System Info##
 project_name 				test_mmvt_inp
-rootdir					./mmvt_param_test3
+rootdir					/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/mmvt_bd_test2
 
 ##System Files###
 
 ff amber
-system_pdb_filename 		./holo_leap.pdb
-system_parm_filename 		./holo.parm7
-system_rst_filename			./holo.rst7
-system_bin_coordinates		./holo.coor
-extendedsystem_filename		./holo.xsc
+system_pdb_filename 		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/holo_leap.pdb
+system_parm_filename 		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/holo.parm7
+system_rst_filename		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/holo.rst7
+system_bin_coordinates		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/holo.coor
+extendedsystem_filename		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/holo.xsc
 system_psf_filename 		foo.psf
-lig_pqr_filename 		./lig.pqr
-rec_pdb_filename		./rec.pdb
-rec_dry_pdb_filename		./rec_dry.pdb
-rec_dry_pqr_filename 		./rec_dry.pqr
+lig_pqr_filename 		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/lig.pqr
+rec_pdb_filename		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/rec.pdb
+rec_dry_pdb_filename		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/rec_dry.pdb
+rec_dry_pqr_filename 		/net/home/bjagger/mmvt_seekr/mmvt_seekr/tests/tryp_inp_test/rec_dry.pqr
 watermodel			tip4p
 
 
@@ -50,7 +50,7 @@ prod_steps			20000000
 # BD Parameters
 ##############################################################
 browndye_bin_dir  /software/repo/moleculardynamics/browndye/2018.5.1/bin
-empty_pqrxml_path ./empty.pqrxml
+empty_pqrxml_path /net/home/bjagger/mmvt_seekr/mmvt_seekr/empty.pqrxml
 bd_radius 14 
 bd_centerx -6.375
 bd_centery -4.430

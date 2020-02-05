@@ -49,8 +49,8 @@ def modify_pqr(pqr_filename):
   pqrread.close
   pqrwrite = open(pqr_filename, 'w')
   for line in raw_pqr:
-	if re.match("ATOM",line):
-	  pqrwrite.write(line)
+    if re.match("ATOM",line):
+      pqrwrite.write(line)
   pqrwrite.close()
   return
 
@@ -69,58 +69,58 @@ for i in range(number_of_trajs):
   rxn_output = open(outputfilename, 'r')
   number_list = []
   subtraj_list = []
-  for line in rxn_output.xreadlines():
-	if re.search("<number>",line):
-	  number_list.append(int(line.strip().split()[1])) # pull out the text within the center of the tag
-	elif re.search("<subtrajectory>",line):
-	  subtraj_list.append(int(line.strip().split()[1])) # pull out the text within the center of the tag
+  for line in rxn_output:
+    if re.search("<number>",line):
+      number_list.append(int(line.strip().split()[1])) # pull out the text within the center of the tag
+    elif re.search("<subtrajectory>",line):
+      subtraj_list.append(int(line.strip().split()[1])) # pull out the text within the center of the tag
 
   rxn_output.close()
   numlines = len(number_list)
 
   for f in range(numlines):
-	# first get the indeces of the trajectory number and subtrajectory
-	if counter > max_structures:
-	  quitting = True
-	  break
-	rxn_number = number_list[f]
-	rxn_subtraj = subtraj_list[f]
-	# we need to run process_trajectories to pull out all the trajectory information
-	stem = os.path.join(workdir,"proc_traj%d_%d" % (i, f))
-	xmltrajfilename = "%s.xml" % (stem,)
-	cmd = "process_trajectories -traj %s -index %s -n %d -sn %d -nstride 1 > %s" % (traj_filename, trajindex_filename, rxn_number, rxn_subtraj, xmltrajfilename)
-	print("running command:", cmd)
-	os.system(cmd)
-	# read each trajectory, and pull out the very last frame: the encounter complex
-	trajfile = open(xmltrajfilename,'r')
-	trajfilelist = trajfile.readlines()
-	trajfile.close()
-	lastframelist = trajfilelist[:3] + trajfilelist[-9:]
-	lastframename = stem + "_last.xml"
-	lastframe = open(lastframename, 'w')
-	lastframe.writelines(lastframelist) # write the last frame
-	lastframe.close()
-	# write the last frame as a pqr file
-	pqrfile = os.path.join(workdir, "lig%d_%d.pqr" % (i,f))
-	cmd = "xyz_trajectory -mol0 %s -mol1 %s -trajf %s -pqr > %s" % (empty, pqrxml1, lastframename, pqrfile)
-	print("running command:", cmd)
-	os.system(cmd)
-	# the pqr files must be modified
-	modify_pqr(pqrfile)
-	# write the receptor pqr
-	if i == 0 and f == 0:
-	  pqrfile = '.'.join(os.path.basename('$PQRXML0').split('.')[:-1])
-	  cmd = "xyz_trajectory -mol0 %s -mol1 %s -trajf %s -pqr > %s.pqr" % (pqrxml0, empty, lastframename, pqrfile)
-	  print("running command:", cmd)
-	  os.system(cmd)
-	  # the pqr files must be modified
-	  modify_pqr(pqrfile+'.pqr')
-	  cmd = "pqr2xml < %s.pqr> %s.pqrxml; apbs %s.pqr.in > %s.pqr.out" % (pqrfile, pqrfile, pqrfile, pqrfile)
-	  print("running command:", cmd)
-	  os.system(cmd)
+    # first get the indeces of the trajectory number and subtrajectory
+    if counter > max_structures:
+      quitting = True
+      break
+    rxn_number = number_list[f]
+    rxn_subtraj = subtraj_list[f]
+    # we need to run process_trajectories to pull out all the trajectory information
+    stem = os.path.join(workdir,"proc_traj%d_%d" % (i, f))
+    xmltrajfilename = "%s.xml" % (stem,)
+    cmd = "process_trajectories -traj %s -index %s -n %d -sn %d -nstride 1 > %s" % (traj_filename, trajindex_filename, rxn_number, rxn_subtraj, xmltrajfilename)
+    print("running command:", cmd)
+    os.system(cmd)
+    # read each trajectory, and pull out the very last frame: the encounter complex
+    trajfile = open(xmltrajfilename,'r')
+    trajfilelist = trajfile.readlines()
+    trajfile.close()
+    lastframelist = trajfilelist[:3] + trajfilelist[-9:]
+    lastframename = stem + "_last.xml"
+    lastframe = open(lastframename, 'w')
+    lastframe.writelines(lastframelist) # write the last frame
+    lastframe.close()
+    # write the last frame as a pqr file
+    pqrfile = os.path.join(workdir, "lig%d_%d.pqr" % (i,f))
+    cmd = "xyz_trajectory -mol0 %s -mol1 %s -trajf %s -pqr > %s" % (empty, pqrxml1, lastframename, pqrfile)
+    print("running command:", cmd)
+    os.system(cmd)
+    # the pqr files must be modified
+    modify_pqr(pqrfile)
+    # write the receptor pqr
+    if i == 0 and f == 0:
+      pqrfile = '.'.join(os.path.basename('$PQRXML0').split('.')[:-1])
+      cmd = "xyz_trajectory -mol0 %s -mol1 %s -trajf %s -pqr > %s.pqr" % (pqrxml0, empty, lastframename, pqrfile)
+      print("running command:", cmd)
+      os.system(cmd)
+      # the pqr files must be modified
+      modify_pqr(pqrfile+'.pqr')
+      cmd = "pqr2xml < %s.pqr> %s.pqrxml; apbs %s.pqr.in > %s.pqr.out" % (pqrfile, pqrfile, pqrfile, pqrfile)
+      print("running command:", cmd)
+      os.system(cmd)
 
-	os.remove(xmltrajfilename)
-	counter += 1
+    os.remove(xmltrajfilename)
+    counter += 1
 """
 
 make_fhpd_template = """#!/usr/bin/python
@@ -173,12 +173,12 @@ for arg in args: # for each pqr file
   ligname = os.path.basename(arg).split('.')[0]
   dirname = os.path.join(fhpd_dir, ligname)
   if not os.path.exists(dirname):
-	os.mkdir(dirname)
+    os.mkdir(dirname)
 
   # 2a. make the PQRXML file
   pqrxml = os.path.join(dirname, ligname+'.pqrxml')
   cmd = "pqr2xml < %s > %s" % (arg, pqrxml)
-  print "running command:", cmd
+  print("running command:"), cmd
   os.system(cmd)
 
   # 2b.  make bd input file
@@ -225,25 +225,25 @@ def parse_bd_results(bd_results_filename):
   #bd_results_file = open(bd_results_filename, 'r')
   bd_dict = {}
   if os.path.getsize(bd_results_filename) == 0:
-	return bd_dict
+    return bd_dict
   try:
-	tree = ET.parse(bd_results_filename)
+    tree = ET.parse(bd_results_filename)
   except SyntaxError:
-	return bd_dict
+    return bd_dict
   root = tree.getroot()
   for tag in root:
-	if tag.tag == "reactions":
-	  reactions = tag
-	  for tag2 in reactions:
-		i = 0
-		if tag2.tag == "escaped":
-		  bd_dict['inf'] = int(tag2.text)
-		elif tag2.tag == "completed":
-		  site = tag2[0].text[5:] # need to remove the "rxn" from the beginning of the site string
-		  n = tag2[1].text
-		  #name = outer_state[i] + '_' + str(site)
-		  bd_dict[site] = int(n)
-		  i += 1
+    if tag.tag == "reactions":
+      reactions = tag
+      for tag2 in reactions:
+        i = 0
+        if tag2.tag == "escaped":
+          bd_dict['inf'] = int(tag2.text)
+        elif tag2.tag == "completed":
+          site = tag2[0].text[5:] # need to remove the "rxn" from the beginning of the site string
+          n = tag2[1].text
+          #name = outer_state[i] + '_' + str(site)
+          bd_dict[site] = int(n)
+          i += 1
 
   return bd_dict
 
@@ -254,10 +254,10 @@ def add_dictionaries(dict1, dict2):
   '''
   new_dict = dict1
   for key in dict2.keys():
-	if key in dict1.keys():
-	  dict1[key] += dict2[key]
-	else:
-	  dict1[key] = dict2[key]
+    if key in dict1.keys():
+      dict1[key] += dict2[key]
+    else:
+      dict1[key] = dict2[key]
 
   return dict1
 
@@ -265,16 +265,16 @@ def make_new_results_file(bd_results_filename, template_filename, bd_dict):
   tree = ET.parse(template_filename)
   root = tree.getroot()
   for tag in root:
-	if tag.tag == "reactions":
-	  reactions = tag
-	  for tag2 in reactions:
-		i = 0
-		if tag2.tag == "escaped":
-		  tag2.text=str(bd_dict['inf'])
-		elif tag2.tag == "completed":
-		  site = tag2[0].text[5:] # need to remove the "rxn" from the beginning of the site string
-		  tag2[1].text = str(bd_dict[site])
-		  i += 1
+    if tag.tag == "reactions":
+      reactions = tag
+      for tag2 in reactions:
+        i = 0
+        if tag2.tag == "escaped":
+          tag2.text=str(bd_dict['inf'])
+        elif tag2.tag == "completed":
+          site = tag2[0].text[5:] # need to remove the "rxn" from the beginning of the site string
+          tag2[1].text = str(bd_dict[site])
+          i += 1
   results_str = ET.tostring(root)
   results_file = open(bd_results_filename,'w')
   results_file.write(results_str)
@@ -296,7 +296,6 @@ for ligfile in globlist:
 #assert results_filename, "no results files were read. Possibly something is wrong with the glob inside fhpd_consolidate.py???"
 make_new_results_file("results.xml", results_filename, rxn_dict)
 """
-
 
 
 RXN_FILENAME = 'rxns.xml'
@@ -576,16 +575,18 @@ def main(settings):
 	b_surface_pqrxmls = _write_browndye_input(pqrs, settings, b_surface_criteria, work_dir=b_surface_path,	browndye_bin=browndye_bin, start_at_site='false',) # write input for this part
 
 	#generate BD milestone files
-
+	pqrs = [copy.deepcopy(rec_struct), copy.deepcopy(lig_struct)]
+	pqrs[1].struct_id='bd_ligand'
 	bd_file_path = settings['bd_milestone_path']
-	if not os.path.exists(bd_milestone_path): os.mkdir(bd_file_path)
+	if not os.path.exists(bd_file_path): os.mkdir(bd_file_path)
+	criteria = []
 	criteria.append({'centerx':settings['bd_centerx'], 'centery':settings['bd_centery'], 'centerz':settings['bd_centerz'], 'ligx':lig_center[0], 'ligy':lig_center[1], 'ligz':lig_center[2], 'radius':settings['bd_lower_bound'], 'index': settings['bd_lower_bound_index']} ) # add every site to the criteria list
 	
 	# make BD preparation scripts extract_bd_frames.py and bd_fhpd.pyp
 	#print "settings['starting_surfaces'][i]:", settings['starting_surfaces'][i]
 	# Write the script to extract all frames from the successful b_surface bd trajectories
 
-	extract_bd_frames_dict = {'TRAJDIR':"../../b_surface", 'WORKDIR':"./trajs", 'PQRXML0':os.path.basename(b_surface_pqrxmls[0]), 'PQRXML1':os.path.basename(b_surface_pqrxmls[1]), 'EMPTY':empty_pqrxml, 'SITENAME':'%s_%s' % (milestone_pos_rot_list[m][0].siteid,milestone_pos_rot_list[m][0].index), 'NUMBER_OF_TRAJS':settings['threads']}
+	extract_bd_frames_dict = {'TRAJDIR':"../b_surface", 'WORKDIR':"./trajs", 'PQRXML0':os.path.basename(b_surface_pqrxmls[0]), 'PQRXML1':os.path.basename(b_surface_pqrxmls[1]), 'EMPTY':empty_pqrxml, 'SITENAME':'milestone_%s' % (settings['bd_index']), 'NUMBER_OF_TRAJS':settings['threads']}
 	extract_bd_frames = Adv_template(extract_bd_frames_template,extract_bd_frames_dict)
 	extract_file = open(os.path.join(bd_file_path,"extract_bd_frames.py"), 'w')
 	extract_file.write(extract_bd_frames.get_output()) # write an xml file for the input to bd
@@ -603,11 +604,11 @@ def main(settings):
 	fhpd_consolidate_file.write(fhpd_consolidate.get_output()) # write an xml file for the input to bd
 	fhpd_consolidate_file.close()
 
-	counter += 1
+	#counter += 1
 
 
 
-	bd_pqrxmls = write_browndye_input(pqrs, settings, criteria, work_dir=bd_milestone_path, browndye_bin=browndye_bin,fhpd_mode=True)
+	bd_pqrxmls = _write_browndye_input(pqrs, settings, criteria, work_dir=bd_file_path, browndye_bin=browndye_bin,fhpd_mode=True)
 
 
 	return
