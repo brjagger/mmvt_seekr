@@ -35,7 +35,7 @@ k_boltz = 1.3806488e-23
 
 
 
-def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=False,):
+def analyze_kinetics(calc_type, model, bound_indices, max_steps =[None], verbose=False,):
 	'''main function to perform all kinetics analyses.
 	Given a Model() object with its statistics filled out, it will return an estimate of the kinetic
 	value, given all or a subset of its statistics.
@@ -222,7 +222,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 			Q[i][j] = N[i][j]/R[i]
 			
 
-	for i in range(len(N[0])):
+	for i in range(len(Q[0])):
 		Q[i][i] = -np.sum(Q[i])
 
 
@@ -230,7 +230,7 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 	if verbose: print("")
 	if verbose: print(Q)
 
-# Calculate MFPT
+# Calculate MFPT 
 	
 	T= calc_MFPT_vec(Q)
 
@@ -240,9 +240,75 @@ def analyze_kinetics(calc_type, model, bound_dict, max_steps =[None], verbose=Fa
 		if verbose: print(i, total_cell_times[i]*1e9, "ns")
 		total_sim_time += total_cell_times[i]
 
-	print("Total simulation time: " ,  total_sim_time*1e9, "ns") 
+	print("Total simulation time: " ,  total_sim_time*1e9, "ns")
+
 
 	return p_equil, N, R, T, T_tot, Q, N_conv, R_conv, k_cell, 
+
+
+def get_index_dict(trans_dict):
+	'''given a transition (or count) dictionary, will return a transition (or count) matrix'''
+	index_dict = {}
+	trans_dict_keys = trans_dict.keys()
+	trans_dict_keys = [key.replace('inf', 'inf_0') for key in trans_dict_keys]
+	n = len(trans_dict_keys)
+	#print trans_dict_keys
+	i = 0
+	trans_dict_keys = sorted(trans_dict_keys, key=lambda keystring:keystring.split('_')[0]) # first sort by site
+	trans_dict_keys = sorted(trans_dict_keys, key=lambda keystring:int(keystring.split('_')[1])) # then sort by milestone
+	#print trans_dict_keys
+	#count_dict_keys = sorted(count_dict.keys(), key=lambda keystring:keystring )#int(keystring.split('_')[1])) # then sort by milestone
+	#count_dict_keys.sort()
+	for key in trans_dict_keys:
+		if key == 'inf_0': key = 'inf'
+		index_dict[i] = key
+		i += 1
+
+def calc_kon_from_bd(model, bound_indices, Q):
+	# b-surface milestone
+	n= Q.shape[0]
+
+	#get preliminary transition matrix, K
+	K, avg_t = rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
+	
+	#add infinity state to K
+	K[n+1][n+1] = 1.0
+	#modify K for bound/sink states
+	for key in bound_indices:
+		K[int(key),:] = 0.0
+		K[int(key)][int(key)] =1 
+
+
+	#extract BD statistics from B surface calculation
+	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(
+		results_filename="results.xml", bd_time=bd_time)
+	src_key = b_surface_counts.keys()[0]
+	b_surface_trans = {src_key:{}}
+
+
+	for dest_key in b_surface_counts[src_key].keys():
+		b_surface_trans[src_key][dest_key] = float(b_surface_counts[src_key][dest_key]) / float(b_surface_total_counts[src_key])
+
+	q0 = trans_dict_to_q0_vector(b_surface_trans)
+
+	beta = get_beta_from_K_q0(K, q0, bound_indices)
+
+	k_b = run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
+	print( "k(b):", k_b)
+	k_on = k_b * beta
+
+	return k_on
+
+def trans_dict_to_q0_vector(trans_dict, K):
+	'''given a transition matrix, will return a vector of starting fluxes based on b-surface stats.'''
+	n = K.shape[0]
+	src_key = trans_dict.keys()[0] # the key that refers to the b-surface trans dict
+	q0_vector = np.zeros((n,1))
+	for i in range(n): # move down the vector element by element
+		dest_key = i
+		if dest_key in trans_dict[src_key].keys():
+			q0_vector[i,0] = trans_dict[src_key][dest_key]
+	return q0_vector
 
 def calc_MFPT_vec(Q):
 	Q_hat = Q[:-1,:-1]
@@ -263,6 +329,68 @@ def calc_MFPT_vec(Q):
 		#print "T", T  
 
 	return T
+
+
+def rate_mat_to_prob_mat(Q, calc_type='on'):
+	''' converts a rate matrix Q into probability matrix (kernel) K and an incubation time vector'''
+	n = Q.shape[0]
+	P = np.matrix(np.zeros((n,n)))
+	K = np.matrix(np.zeros((n,n)))
+	sum_vector = np.zeros(n)
+	avg_t = np.zeros(n)
+	for i in range(n): # first make the sum of all the rates
+		for j in range(n):
+			if j == i: continue
+			sum_vector[j] += Q[i,j]
+
+
+	for i in range(n):
+		for j in range(n):
+			if j == i: continue
+			if sum_vector[j] == 0:
+				K[i,j] = 0.0
+				#avg_t[j] = 0.0
+			else:
+				K[i,j] = Q[i,j] / sum_vector[j]
+
+		if sum_vector[i] != 0.0:
+			avg_t[i] = 1.0 / sum_vector[i]
+		else: # then the sum vector goes to zero, make the state go to itself
+			if calc_type == "on":
+				K[i,i] = 1.0
+			elif calc_type == "off":
+				K[i,i] = 0.0
+			#avg_t[i] = something???
+
+	return K, avg_t
+
+def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
+	'runs the Browndye program compute_rate_constant to find the value k(b)'
+	process_trajectories = os.path.join(browndye_bin_dir, "compute_rate_constant")
+	cmd = "%s < %s" % (process_trajectories, results_filename)
+	output_string = check_output(cmd, shell=True) # run the Browndye process command
+	root = ET.fromstring(output_string) # read the XML string
+	rate = root[0] # the first <rate> tag, because it doesn't really matter which one we choose
+	rate_constant = rate.find('rate-constant')
+	k_on_tag = rate_constant.find('mean')
+	reaction_probability = rate.find('reaction-probability')
+	beta_tag = reaction_probability.find('mean')
+	assert (k_on_tag != None) and (beta_tag != None), "Alert: Unable to find rate constant <mean> tags after running compute_rate_constant on file %s" % results_filename
+	k = float(k_on_tag.text)
+	beta = float(beta_tag.text)
+	k_b = k / beta # the flux to the b-surface
+	return k_b
+
+def get_beta_from_K_q0(K, q0, bound_indices):
+	'given a transition matrix K and starting vector q_0, returns a beta value for k-ons'
+	K_inf = np.matrix(K) ** 99999999
+	#n,m = K_inf.shape
+	q_inf = np.dot(K_inf, q0)
+	#print "q_inf:", q_inf
+	beta = 0.0
+	for bound_index in bound_indices:
+		beta += q_inf[bound_index, 0]
+	return beta
 
 def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, skip = 100, stride =1,  verbose= False):
 	'''Samples distribution of rate matrices assumming a poisson (gamma) distribution with parameters Nij and Ri using Markov chain Monte Carlo
@@ -348,7 +476,7 @@ def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, 
 	if verbose: print("final MCMC matrix", Q)
 	return k_off_list, running_avg, running_std 
 
-def check_milestone_convergence(model, bound_dict, conv_stride, skip, max_steps, calc_type, verbose=False,):
+def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, calc_type, verbose=False,):
 	'''
 
 	'''
@@ -366,7 +494,7 @@ def check_milestone_convergence(model, bound_dict, conv_stride, skip, max_steps,
 
 	for interval_index in range(len(conv_intervals)):
 		max_step_list[:] = conv_intervals[interval_index]
-		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(calc_type, model, bound_dict, max_steps=max_step_list, verbose=verbose,)
+		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(calc_type, model, bound_indices, max_steps=max_step_list, verbose=verbose,)
 
 		MFPT = T[0]
 		k_off = 1/MFPT
