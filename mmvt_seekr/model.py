@@ -335,7 +335,8 @@ class Anchor():
     total_counts = {}
     total_times = {}
     avg_times = {}
-    src_key = '%s_%s' % (self.sitename, self.index)
+    #src_key = '%s_%s' % (self.sitename, self.index)
+    src_key = self.index
     counts[src_key], total_times[src_key] = parse_bd_results(bd_results_filename)
     total_counts[src_key] = 0
     for dest_key in counts[src_key].keys():
@@ -479,6 +480,7 @@ def parse_milestoning_file(milestoning_filename):
 
 
    site_counter = 0 
+   milestone_id_list = []
    for branch in root:
       if branch.tag != "site": continue # make sure that we are parsing a site
       site_name = branch.find('name').text.strip()
@@ -523,6 +525,8 @@ def parse_milestoning_file(milestoning_filename):
                pass
             end = milestone.find('end').text.strip()
             milestone_obj = Milestone(id, shape, end, normal, radius)
+            if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
+            print("id_list", milestone_id_list)
             anchor_obj.add_milestone(milestone_obj)
          site_obj.add_anchor(anchor_obj)
      
@@ -530,8 +534,13 @@ def parse_milestoning_file(milestoning_filename):
       site_counter += 1 
 
 
-     bd_index = model.num_milestones + 1
-     model.b_surface = Anchor(index="0", shape="sphere", end="True", md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
+      bd_index = len(milestone_id_list) -1
+      b_surf_index = len(milestone_id_list)
+      model.b_surface = Anchor(index=b_surf_index,  md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
+
+      print("bd index", bd_index)
+      model.bd_milestone = Anchor(index=bd_index, md=False, bd=True, fullname="bd_milestone", directory="bd_milestone", siteindex=0, sitename="bd_milestone") 
+     
 
    return model 
 
@@ -550,30 +559,32 @@ def add_dictionaries(dict1, dict2):
    return dict1
 
 def parse_bd_results(bd_results_filename):
-   ''' given a BD results file name, will open the file and extract information about state transitions'''
-   bd_dict = {}
-   bd_time = None
-   tree = ET.parse(bd_results_filename)
-   root = tree.getroot()
-   for tag in root:
-      if tag.tag == "reactions":
-         reactions = tag
-     for tag2 in reactions:
-      i = 0
-      if tag2.tag == "escaped":
-        bd_dict['inf'] = int(tag2.text)
-      elif tag2.tag == "completed":
-        site = tag2[0].text.strip()
-        #print "site:", site
-        n = tag2[1].text
-        #print "n:", n
-        #name = outer_state[i] + '_' + str(site)
-        bd_dict[site] = int(n)
-        i += 1
-      elif tag2.tag == "time":
-        bd_time = float(tag2.text)
+  ''' given a BD results file name, will open the file and extract information about state transitions'''
+  #bd_results_file = open(bd_results_filename, 'r')
+  bd_dict = {}
+  bd_time = None
+  tree = ET.parse(bd_results_filename)
+  root = tree.getroot()
+  for tag in root:
+    if tag.tag == "reactions":
+      reactions = tag
+      for tag2 in reactions:
+        i = 0
+        if tag2.tag == "escaped":
+          bd_dict['inf'] = int(tag2.text)
+        elif tag2.tag == "completed":
+          text = tag2[0].text.strip()
+          milestone = text.split('_')[1] #get just the milestone number
+          #print "site:", site
+          n = tag2[1].text
+          #print "n:", n
+          #name = outer_state[i] + '_' + str(site)
+          bd_dict[milestone] = int(n)
+          i += 1
+        elif tag2.tag == "time":
+          bd_time = float(tag2.text)
 
-   return bd_dict, bd_time
+  return bd_dict, bd_time
 
 def parse_bound_state_args(bound_args):
    """Parses a user-defined string corresponding to all bound states
@@ -640,7 +651,7 @@ def read_transition_statistics_from_files(model, verbose):
             if max_steps > total_steps:
               total_steps = max_steps
   
-   return total_step
+   return total_steps
 
 
 def make_model( milestone_filename="milestones.xml", bound_states="0", verbose=False):

@@ -20,14 +20,15 @@ Parameters
 		model : class 
 				contains all required information for milestoning analysis
 """
-import random
+import random, os
+from subprocess import check_output
 from pprint import pprint
 from math import exp, log
 import numpy as np
 from scipy import linalg as la
 from scipy.stats import gamma as gamma
 from itertools import islice
-
+import xml.etree.ElementTree as ET
 
 R_GAS_CONSTANT = 0.0019872 # in kcal/mol*K
 k_boltz = 1.3806488e-23
@@ -266,48 +267,110 @@ def get_index_dict(trans_dict):
 
 def calc_kon_from_bd(model, bound_indices, Q):
 	# b-surface milestone
+	inf_index = -1
+	bd_time = 0.0
 	n= Q.shape[0]
 
+	print("Q", Q)
+	#Q_mod = Q
+	#Q_mod[-1,:]=0.0
+	#print("Q mod", Q_mod)
 	#get preliminary transition matrix, K
-	K, avg_t = rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
+	K_prelim = rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
+	K_prelim_mod = K_prelim
+	K_prelim_mod[-1,:] = 0.0
+	print("K prelim", K_prelim)
+	K = np.zeros((n+1,n+1))
+	K[:-1,:-1] = K_prelim_mod
+
+	print("K", K)
+
+	#extract BD milestone statistics for infinity state
+	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone.get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
+
+	src_key = model.bd_milestone.index
+	print("src_key", src_key)
+	print(bd_counts)
+
 	
+	bd_counts[src_key][inf_index]= bd_counts[src_key].pop('inf')
+	print(bd_counts)
+	#bd_counts = process_trans_for_bd(bd_counts, inf_index)
+
+	
+        #for dest_key in bd_counts[src_key].keys():
+        #        bd_trans[src_key][dest_key] = float(bd_counts[src_key][dest_key]) / float(bd_counts[src_key])
+        #print("bd_trans", bd_trans)
+
+
+	#add BD escape probability to K
+	for key in bd_counts[src_key].keys():
+		K[src_key][int(key)]=float(bd_counts[src_key][key])/float(bd_total_counts[src_key])
 	#add infinity state to K
-	K[n+1][n+1] = 1.0
+	K[inf_index][:] = 0.0
+	K[inf_index][inf_index] = 1.0
 	#modify K for bound/sink states
 	for key in bound_indices:
 		K[int(key),:] = 0.0
 		K[int(key)][int(key)] =1 
 
+	print("K  mod", K.shape, K)
+	K_trans = np.transpose(K)
+	K = K_trans
+	print("k trans", K)
 
 	#extract BD statistics from B surface calculation
-	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(
-		results_filename="results.xml", bd_time=bd_time)
-	src_key = b_surface_counts.keys()[0]
+	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
+	print(b_surface_counts)
+	#src_key = b_surface_counts[0]
+	src_key = model.b_surface.index
 	b_surface_trans = {src_key:{}}
-
+	b_surface_counts[src_key][inf_index]= b_surface_counts[src_key].pop('inf')
+	print("b surf counts", b_surface_counts)
 
 	for dest_key in b_surface_counts[src_key].keys():
 		b_surface_trans[src_key][dest_key] = float(b_surface_counts[src_key][dest_key]) / float(b_surface_total_counts[src_key])
 
-	q0 = trans_dict_to_q0_vector(b_surface_trans)
+	#b_surface_trans = process_trans_for_bd(b_surface_trans, inf_index)
+	q0 = trans_dict_to_q0_vector(b_surface_trans,K)
 
+	print("q0", q0)
 	beta = get_beta_from_K_q0(K, q0, bound_indices)
-
+	print("beta", beta)
 	k_b = run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
 	print( "k(b):", k_b)
 	k_on = k_b * beta
 
 	return k_on
 
-def trans_dict_to_q0_vector(trans_dict, K):
+
+def process_trans_for_bd(trans_dict, inf_index):
+  '''given a transition (or count) dictionary, will return a transition (or count) matrix'''
+  new_trans_dict = {}
+  src_key = trans_dict.keys()[0] #get the source milestone
+  new_src_key = src_key.split('_')[2]
+  for key, val in trans_dict[src_key].items():
+    print(key)
+    key.replace('inf', inf_index)
+    #new_key = key.split('_')[1]
+    #print(new_key)
+    #new_trans_dict[new_src_key] = trans_dict[key] 
+
+
+  print(trans_dict)
+
+
+  return trans_dict
+
+
+def trans_dict_to_q0_vector(trans_dict, K,):
 	'''given a transition matrix, will return a vector of starting fluxes based on b-surface stats.'''
 	n = K.shape[0]
-	src_key = trans_dict.keys()[0] # the key that refers to the b-surface trans dict
+	print("b trans_dict", trans_dict)
+	src_key = list(trans_dict)[0] # the key that refers to the b-surface trans dict
 	q0_vector = np.zeros((n,1))
-	for i in range(n): # move down the vector element by element
-		dest_key = i
-		if dest_key in trans_dict[src_key].keys():
-			q0_vector[i,0] = trans_dict[src_key][dest_key]
+	for key in trans_dict[src_key].keys():
+			q0_vector[int(key),0] = trans_dict[src_key][key]
 	return q0_vector
 
 def calc_MFPT_vec(Q):
@@ -330,10 +393,28 @@ def calc_MFPT_vec(Q):
 
 	return T
 
+def rate_mat_to_prob_mat(Q):
+	n = Q.shape[0]
+	K= np.matrix(np.zeros((n,n)))
+	sum_vector = np.zeros(n)
+	
+	for i in range(n):
+		sum_vector[i]= -1* Q[i,i]
 
-def rate_mat_to_prob_mat(Q, calc_type='on'):
+	print("sum vec", sum_vector)
+
+	for i in range(n):
+		for j in range(n):
+			if i==j: continue
+			K[i,j] = Q[i,j] / sum_vector[i] 	
+
+	return K
+
+def BAK_rate_mat_to_prob_mat(Q, calc_type='on'):
 	''' converts a rate matrix Q into probability matrix (kernel) K and an incubation time vector'''
 	n = Q.shape[0]
+	Q = Q * 1e-15
+	print("Q_sec", Q)
 	P = np.matrix(np.zeros((n,n)))
 	K = np.matrix(np.zeros((n,n)))
 	sum_vector = np.zeros(n)
@@ -341,25 +422,31 @@ def rate_mat_to_prob_mat(Q, calc_type='on'):
 	for i in range(n): # first make the sum of all the rates
 		for j in range(n):
 			if j == i: continue
+			print(i,j,Q[i,j])
 			sum_vector[j] += Q[i,j]
+
+	print(sum_vector)
 
 
 	for i in range(n):
 		for j in range(n):
 			if j == i: continue
-			if sum_vector[j] == 0:
+			#print("sum_vec", sum_vector[j])
+			if sum_vector[j] == 0.0:
 				K[i,j] = 0.0
 				#avg_t[j] = 0.0
 			else:
 				K[i,j] = Q[i,j] / sum_vector[j]
+				print(i,j)
+				print(K[i,j], Q[i,j], sum_vector[j])
 
-		if sum_vector[i] != 0.0:
-			avg_t[i] = 1.0 / sum_vector[i]
-		else: # then the sum vector goes to zero, make the state go to itself
-			if calc_type == "on":
-				K[i,i] = 1.0
-			elif calc_type == "off":
-				K[i,i] = 0.0
+#		if sum_vector[i] != 0.0:
+#			avg_t[i] = 1.0 / sum_vector[i]
+#		else: # then the sum vector goes to zero, make the state go to itself
+#			if calc_type == "on":
+#				K[i,i] = 1.0
+#			elif calc_type == "off":
+#				K[i,i] = 0.0
 			#avg_t[i] = something???
 
 	return K, avg_t
@@ -384,8 +471,10 @@ def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 def get_beta_from_K_q0(K, q0, bound_indices):
 	'given a transition matrix K and starting vector q_0, returns a beta value for k-ons'
 	K_inf = np.matrix(K) ** 99999999
+	print("K inf", K_inf)
 	#n,m = K_inf.shape
 	q_inf = np.dot(K_inf, q0)
+	print("q inf", q_inf)
 	#print "q_inf:", q_inf
 	beta = 0.0
 	for bound_index in bound_indices:
@@ -405,6 +494,9 @@ def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, 
 	k_off_list = []
 	running_avg = []
 	running_std = []
+	k_on_list = []
+	k_on_avg = []
+	k_on_std =[]
 	
 	
 	N = N_pre
@@ -471,6 +563,7 @@ def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, 
 				k_off_list.append(1/T_err[0])
 				running_avg.append(np.average(k_off_list))
 				running_std.append(np.std(k_off_list))
+				
  
 		Q = Qnew
 	if verbose: print("final MCMC matrix", Q)
