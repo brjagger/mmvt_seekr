@@ -526,7 +526,6 @@ def parse_milestoning_file(milestoning_filename):
             end = milestone.find('end').text.strip()
             milestone_obj = Milestone(id, shape, end, normal, radius)
             if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
-            print("id_list", milestone_id_list)
             anchor_obj.add_milestone(milestone_obj)
          site_obj.add_anchor(anchor_obj)
      
@@ -538,7 +537,7 @@ def parse_milestoning_file(milestoning_filename):
       b_surf_index = len(milestone_id_list)
       model.b_surface = Anchor(index=b_surf_index,  md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
 
-      print("bd index", bd_index)
+      #print("bd index", bd_index)
       model.bd_milestone = Anchor(index=bd_index, md=False, bd=True, fullname="bd_milestone", directory="bd_milestone", siteindex=0, sitename="bd_milestone") 
      
 
@@ -654,7 +653,7 @@ def read_transition_statistics_from_files(model, verbose):
    return total_steps
 
 
-def make_model( milestone_filename="milestones.xml", bound_states="0", verbose=False):
+def make_model( milestone_filename="milestones.xml", verbose=False):
    """ Top level function used to parse inputs and create the milestoning model
    
    Parameters
@@ -675,11 +674,11 @@ def make_model( milestone_filename="milestones.xml", bound_states="0", verbose=F
 
    """
 
-   bound_dict = parse_bound_state_args(bound_states)
+   #bound_dict = parse_bound_state_args(bound_states)
    model = parse_milestoning_file(milestone_filename)
    max_steps = read_transition_statistics_from_files(model, verbose)
 
-   return model, bound_dict, max_steps
+   return model, max_steps
 
 
 def boolean(arg):

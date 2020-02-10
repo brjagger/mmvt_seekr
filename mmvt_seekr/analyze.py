@@ -36,7 +36,7 @@ k_boltz = 1.3806488e-23
 
 
 
-def analyze_kinetics(calc_type, model, bound_indices, max_steps =[None], verbose=False,):
+def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 	'''main function to perform all kinetics analyses.
 	Given a Model() object with its statistics filled out, it will return an estimate of the kinetic
 	value, given all or a subset of its statistics.
@@ -241,7 +241,7 @@ def analyze_kinetics(calc_type, model, bound_indices, max_steps =[None], verbose
 		if verbose: print(i, total_cell_times[i]*1e9, "ns")
 		total_sim_time += total_cell_times[i]
 
-	print("Total simulation time: " ,  total_sim_time*1e9, "ns")
+	if verbose: print("Total simulation time: " ,  total_sim_time*1e9, "ns")
 
 
 	return p_equil, N, R, T, T_tot, Q, N_conv, R_conv, k_cell, 
@@ -271,37 +271,27 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	bd_time = 0.0
 	n= Q.shape[0]
 
-	print("Q", Q)
-	#Q_mod = Q
-	#Q_mod[-1,:]=0.0
-	#print("Q mod", Q_mod)
+	#print("Q", Q)
 	#get preliminary transition matrix, K
 	K_prelim = rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
 	K_prelim_mod = K_prelim
 	K_prelim_mod[-1,:] = 0.0
-	print("K prelim", K_prelim)
+	#print("K prelim", K_prelim)
 	K = np.zeros((n+1,n+1))
 	K[:-1,:-1] = K_prelim_mod
 
-	print("K", K)
+	#print("K", K)
 
 	#extract BD milestone statistics for infinity state
 	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone.get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
 
 	src_key = model.bd_milestone.index
-	print("src_key", src_key)
-	print(bd_counts)
+	#print("src_key", src_key)
+	#print(bd_counts)
 
 	
 	bd_counts[src_key][inf_index]= bd_counts[src_key].pop('inf')
-	print(bd_counts)
-	#bd_counts = process_trans_for_bd(bd_counts, inf_index)
-
-	
-        #for dest_key in bd_counts[src_key].keys():
-        #        bd_trans[src_key][dest_key] = float(bd_counts[src_key][dest_key]) / float(bd_counts[src_key])
-        #print("bd_trans", bd_trans)
-
+	#print(bd_counts)
 
 	#add BD escape probability to K
 	for key in bd_counts[src_key].keys():
@@ -314,19 +304,19 @@ def calc_kon_from_bd(model, bound_indices, Q):
 		K[int(key),:] = 0.0
 		K[int(key)][int(key)] =1 
 
-	print("K  mod", K.shape, K)
+	#print("K  mod", K.shape, K)
 	K_trans = np.transpose(K)
 	K = K_trans
-	print("k trans", K)
+	#print("k trans", K)
 
 	#extract BD statistics from B surface calculation
 	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
-	print(b_surface_counts)
+	#print(b_surface_counts)
 	#src_key = b_surface_counts[0]
 	src_key = model.b_surface.index
 	b_surface_trans = {src_key:{}}
 	b_surface_counts[src_key][inf_index]= b_surface_counts[src_key].pop('inf')
-	print("b surf counts", b_surface_counts)
+	#print("b surf counts", b_surface_counts)
 
 	for dest_key in b_surface_counts[src_key].keys():
 		b_surface_trans[src_key][dest_key] = float(b_surface_counts[src_key][dest_key]) / float(b_surface_total_counts[src_key])
@@ -334,11 +324,11 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#b_surface_trans = process_trans_for_bd(b_surface_trans, inf_index)
 	q0 = trans_dict_to_q0_vector(b_surface_trans,K)
 
-	print("q0", q0)
+	#print("q0", q0)
 	beta = get_beta_from_K_q0(K, q0, bound_indices)
-	print("beta", beta)
+	#print("beta", beta)
 	k_b = run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
-	print( "k(b):", k_b)
+	#print( "k(b):", k_b)
 	k_on = k_b * beta
 
 	return k_on
@@ -366,7 +356,7 @@ def process_trans_for_bd(trans_dict, inf_index):
 def trans_dict_to_q0_vector(trans_dict, K,):
 	'''given a transition matrix, will return a vector of starting fluxes based on b-surface stats.'''
 	n = K.shape[0]
-	print("b trans_dict", trans_dict)
+	#print("b trans_dict", trans_dict)
 	src_key = list(trans_dict)[0] # the key that refers to the b-surface trans dict
 	q0_vector = np.zeros((n,1))
 	for key in trans_dict[src_key].keys():
@@ -401,7 +391,7 @@ def rate_mat_to_prob_mat(Q):
 	for i in range(n):
 		sum_vector[i]= -1* Q[i,i]
 
-	print("sum vec", sum_vector)
+	#print("sum vec", sum_vector)
 
 	for i in range(n):
 		for j in range(n):
@@ -409,47 +399,6 @@ def rate_mat_to_prob_mat(Q):
 			K[i,j] = Q[i,j] / sum_vector[i] 	
 
 	return K
-
-def BAK_rate_mat_to_prob_mat(Q, calc_type='on'):
-	''' converts a rate matrix Q into probability matrix (kernel) K and an incubation time vector'''
-	n = Q.shape[0]
-	Q = Q * 1e-15
-	print("Q_sec", Q)
-	P = np.matrix(np.zeros((n,n)))
-	K = np.matrix(np.zeros((n,n)))
-	sum_vector = np.zeros(n)
-	avg_t = np.zeros(n)
-	for i in range(n): # first make the sum of all the rates
-		for j in range(n):
-			if j == i: continue
-			print(i,j,Q[i,j])
-			sum_vector[j] += Q[i,j]
-
-	print(sum_vector)
-
-
-	for i in range(n):
-		for j in range(n):
-			if j == i: continue
-			#print("sum_vec", sum_vector[j])
-			if sum_vector[j] == 0.0:
-				K[i,j] = 0.0
-				#avg_t[j] = 0.0
-			else:
-				K[i,j] = Q[i,j] / sum_vector[j]
-				print(i,j)
-				print(K[i,j], Q[i,j], sum_vector[j])
-
-#		if sum_vector[i] != 0.0:
-#			avg_t[i] = 1.0 / sum_vector[i]
-#		else: # then the sum vector goes to zero, make the state go to itself
-#			if calc_type == "on":
-#				K[i,i] = 1.0
-#			elif calc_type == "off":
-#				K[i,i] = 0.0
-			#avg_t[i] = something???
-
-	return K, avg_t
 
 def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 	'runs the Browndye program compute_rate_constant to find the value k(b)'
@@ -471,17 +420,17 @@ def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 def get_beta_from_K_q0(K, q0, bound_indices):
 	'given a transition matrix K and starting vector q_0, returns a beta value for k-ons'
 	K_inf = np.matrix(K) ** 99999999
-	print("K inf", K_inf)
+	#print("K inf", K_inf)
 	#n,m = K_inf.shape
 	q_inf = np.dot(K_inf, q0)
-	print("q inf", q_inf)
+	#print("q inf", q_inf)
 	#print "q_inf:", q_inf
 	beta = 0.0
 	for bound_index in bound_indices:
 		beta += q_inf[bound_index, 0]
 	return beta
 
-def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, skip = 100, stride =1,  verbose= False):
+def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, skip = 100, stride =1,  verbose= False):
 	'''Samples distribution of rate matrices assumming a poisson (gamma) distribution with parameters Nij and Ri using Markov chain Monte Carlo
 		Enforces detailed Balance-- using a modified version of Algorithm 4 form Noe 2008 for rate matrices.--  
 	Distribution is:  p(Q|N) = p(Q)p(N|Q)/p(N) = p(Q) PI(q_ij**N_ij * exp(-q_ij * Ri))
@@ -563,13 +512,15 @@ def monte_carlo_milestoning_error(Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, 
 				k_off_list.append(1/T_err[0])
 				running_avg.append(np.average(k_off_list))
 				running_std.append(np.std(k_off_list))
-				
+				k_on_list.append(calc_kon_from_bd(model,bound_indices, Qnew))
+				k_on_avg.append(np.average(k_on_list))
+				k_on_std.append(np.std(k_on_list))	
  
 		Q = Qnew
 	if verbose: print("final MCMC matrix", Q)
-	return k_off_list, running_avg, running_std 
+	return k_off_list, running_avg, running_std, k_on_list, k_on_avg, k_on_std  
 
-def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, calc_type, verbose=False,):
+def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, verbose=False,):
 	'''
 
 	'''
@@ -582,15 +533,17 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 	N_conv = np.zeros((15,15,len(conv_intervals)))
 	R_conv = np.zeros((15,15,len(conv_intervals)))
 	k_conv = np.zeros(len(conv_intervals))
+	k_on_conv = np.zeros(len(conv_intervals))
 	k_cell_conv = np.zeros((15,15,len(conv_intervals)))
 	p_equil_conv = np.zeros((15,len(conv_intervals)))
 
 	for interval_index in range(len(conv_intervals)):
 		max_step_list[:] = conv_intervals[interval_index]
-		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(calc_type, model, bound_indices, max_steps=max_step_list, verbose=verbose,)
+		p_equil, N, R, T, T_tot, Q, n_conv, r_conv, k_cell = analyze_kinetics(model, bound_indices, max_steps=max_step_list, verbose=verbose,)
 
 		MFPT = T[0]
 		k_off = 1/MFPT
+		k_on = calc_kon_from_bd(model, bound_indices, Q)
 
 		for index, x in np.ndenumerate(n_conv):
 				N_conv[index[0]][index[1]][interval_index]=x
@@ -601,8 +554,9 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 		for index4,j in np.ndenumerate(p_equil):
 			p_equil_conv[index4[0]][interval_index]= j   
 		k_conv[interval_index]=k_off
+		k_on_conv[interval_index] = k_on
 
-	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_conv, conv_intervals, 
+	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_conv, k_on_conv, conv_intervals, 
 
 def _add_dictionaries(dict1, dict2):
 	'''
