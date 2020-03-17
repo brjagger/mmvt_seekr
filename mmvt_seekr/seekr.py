@@ -489,6 +489,8 @@ def prepare_seekr():
 	milestone_filename= os.path.join(sys_params['rootdir'], 'milestones.xml') 
 	anchor_list = _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths,)
 	print('Anchor List',anchor_list)
+	_write_milestone_file(anchor_list, md_settings['master_temperature'], 
+		sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
 
 	structures = _load_structures(inputs, sys_params)
 	bd_settings = _get_bd_settings(inputs, sys_params, structures)
@@ -508,8 +510,8 @@ def prepare_seekr():
 
 	print("BD b surface distance", b_surf_distance)
 	bd.main(bd_settings)
-	_write_milestone_file(anchor_list, md_settings['master_temperature'], 
-		sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
+	#_write_milestone_file(anchor_list, md_settings['master_temperature'], 
+	#	sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
 
 
 

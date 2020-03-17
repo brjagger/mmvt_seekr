@@ -6,21 +6,22 @@
 Welcome to mmvt_seekr's documentation!
 =========================================================
 
+
+
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
 
-   getting_started
-   
+   getting_started 
 
-Modules
--------
+   
 
 .. toctree::
    :maxdepth: 2
-   :caption: API:
 
-   model
+   api
+
+
 
 
 

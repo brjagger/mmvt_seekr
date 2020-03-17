@@ -1,25 +1,15 @@
+#!/usr/bin/env python
+
+#===============================================
+# MODULE DOCSTRING
+#=================================================
+
 """
-analyze.py
-Simulation Enabled Estimation of Kinetic Rates (SEEKR) is a tool that facilitates the preparation, running and analysis of multiscale MD/BD/Milestoning  simulations for the calculation of protein-ligand binding kinetics.
+MMVT SEEKR module with main analysis functions
 
-Performs kinetic analysis, including calculation of rate matrix, MFPT (on and off rates), and Milestone free energy
-
-Parameters
-		----------
-		calc_type: string default= "off" 
-				type of calculation, options "on" or "off"
-		model: object Required
-			the SEEKR milestoning model
-		bound_dict: dictionary Required
-			dictionary of bound states in the milestoning model
-
-
-
-		Returns
-		-------
-		model : class 
-				contains all required information for milestoning analysis
+calculates rates, convergence, minimum simulation estimates from a milestone model 
 """
+
 import random, os
 from subprocess import check_output
 from pprint import pprint
@@ -40,6 +30,49 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 	'''main function to perform all kinetics analyses.
 	Given a Model() object with its statistics filled out, it will return an estimate of the kinetic
 	value, given all or a subset of its statistics.
+
+	Parameters
+	-----------
+	model : object
+		Model() object containing all milestone information and transition statistics
+	bound_indices : list
+		list of intiger indices of all milestones to be treated as bound states
+	max_steps : list
+		list of maximum step numbers that are used ti limit amount of data used in kinetics calculations
+		can be set by the user and is also used for convergence analysis
+	verbose: bool
+		enable verbose printing- provides additional details such as values of transition rate matrix
+
+
+	Returns
+	---------
+	p_equil: numpy array
+		array of equilibrium probability of each voronoi cell 
+
+	N : numpy array
+		array of number of transitions between all milestones
+
+	R : numpy array
+		array of transition rates for all milestones
+
+	T : numpy array
+		array of mean first passage times from bound state to all other states
+	
+	T_tot : numpy array
+		array of total simulation time spent in each cell
+
+	Q : numpy array
+		Transition rate matrix
+
+	N_conv : list
+		list of transition count arrays (N) for each convergence interval
+
+	R_conv : list
+		list of transition rate arrays (R) for each convergence interval
+
+	k_cell : numpy array
+		array of transition rates between Voronoi cells
+
 	'''
 	counts = {}; times = {}; total_counts = {}; total_cell_counts = {}; total_times = {}; avg_times = {}; trans = {}; total_cell_times = {}; T_a = {}
 	end_indeces = [];
@@ -57,9 +90,9 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 					anchor_max_steps = max_steps[int(anchor.index)]
 
 
-				this_counts, this_total_counts, this_total_times, this_avg_times = anchor.get_md_transition_statistics(model.md_time_factor, 
+				this_counts, this_total_counts, this_total_times, this_avg_times = anchor._get_md_transition_statistics(model.md_time_factor, 
 						anchor_max_steps)
-				this_cell_counts, this_cell_time = anchor.get_md_vt_collisions(model.md_time_factor, anchor_max_steps)
+				this_cell_counts, this_cell_time = anchor._get_md_vt_collisions(model.md_time_factor, anchor_max_steps)
 				
 				total_counts = _add_dictionaries(total_counts, this_total_counts)
 				if verbose: print('counts',  this_counts)
@@ -85,34 +118,8 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 					times[src_key] = this_total_times[src_key]
 
 
-#      if anchor.bd == True and anchor.directory:
-#        this_counts, this_total_counts, this_total_times, this_avg_times = milestone.get_bd_transition_statistics(bd_time=bd_time)
-#        print 'TIME', this_avg_times
-#        total_counts = add_dictionaries(total_counts, this_total_counts)
-#        total_times = add_dictionaries(total_times, this_total_times)
-#        for src_key in this_counts.keys():
-#          if src_key in counts.keys():
-#            counts[src_key] = add_dictionaries(counts[src_key], this_counts[src_key])
-#          else:
-#            counts[src_key] = this_counts[src_key]
-
- # for src_key in total_times.keys(): # construct the average incubation times
- #   R_cell[src_key] = total_times[src_key] / total_cell_times[src_key]
-
-#  for src_key in counts.keys():
-#    temp = {}
-#    for dest_key in counts[src_key].keys(): # make the transition probability dictionary
-			#temp[dest_key] = float(counts[src_key][dest_key]) / float(total_counts[src_key])
-			#N_cell[src_key][dest_key]
-
-
 
 ## Calculate Voronoi cell equilibrium probability ##
-	#for cell_src_key in total_cell_counts.keys():
-	#total_cell_times = {0: 84668000, 1: 86494000, 2:86504000, 3:92662000, 4:43832000, 5:42430000, 6:43522000} #hard coded -- includes times from combined face sampling
-	#print "total_cell_counts"; pprint(total_cell_counts)  
-	#print "total times"; pprint(total_times)
-	#print "cell times"; pprint(total_cell_times)
 	k_cell = np.zeros((len(total_cell_times),len(total_cell_times)))  
 	k_mod = np.zeros((len(total_cell_times),len(total_cell_times))) 
 	
@@ -233,7 +240,7 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 
 # Calculate MFPT 
 	
-	T= calc_MFPT_vec(Q)
+	T= _calc_MFPT_vec(Q)
 
 
 	total_sim_time = 0
@@ -247,8 +254,11 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 	return p_equil, N, R, T, T_tot, Q, N_conv, R_conv, k_cell, 
 
 
-def get_index_dict(trans_dict):
-	'''given a transition (or count) dictionary, will return a transition (or count) matrix'''
+def _get_index_dict(trans_dict):
+	'''
+	Currently not used
+	given a transition (or count) dictionary, will return a transition (or count) matrix
+	'''
 	index_dict = {}
 	trans_dict_keys = trans_dict.keys()
 	trans_dict_keys = [key.replace('inf', 'inf_0') for key in trans_dict_keys]
@@ -266,6 +276,25 @@ def get_index_dict(trans_dict):
 		i += 1
 
 def calc_kon_from_bd(model, bound_indices, Q):
+	'''
+	Calculate the on rate for the model by incorporating BD simulation data with 
+	MMVT md simulation data. k_on is calculated using the Northrup, Allsion, McCammon method
+
+	Parameters
+	----------
+	model: object
+		the milestoning model object containing all transition information
+	bound_indices : list
+		list of integer indices for all milestones to be treated as bound states
+	Q : numpy array
+		the transition rate matrix from the MMVT simulations
+
+	Returns
+	--------
+	k_on : float
+		the calculated association rate constant
+
+	'''
 	# b-surface milestone
 	inf_index = -1
 	bd_time = 0.0
@@ -273,7 +302,7 @@ def calc_kon_from_bd(model, bound_indices, Q):
 
 	#print("Q", Q)
 	#get preliminary transition matrix, K
-	K_prelim = rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
+	K_prelim = _rate_mat_to_prob_mat(Q) #converts rate matrix Q back to a probability matrix and incubation time vector
 	K_prelim_mod = K_prelim
 	K_prelim_mod[-1,:] = 0.0
 	#print("K prelim", K_prelim)
@@ -283,7 +312,7 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#print("K", K)
 
 	#extract BD milestone statistics for infinity state
-	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone.get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
+	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone._get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
 
 	src_key = model.bd_milestone.index
 	#print("src_key", src_key)
@@ -310,7 +339,7 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#print("k trans", K)
 
 	#extract BD statistics from B surface calculation
-	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
+	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface._get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
 	#print(b_surface_counts)
 	#src_key = b_surface_counts[0]
 	src_key = model.b_surface.index
@@ -321,21 +350,24 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	for dest_key in b_surface_counts[src_key].keys():
 		b_surface_trans[src_key][dest_key] = float(b_surface_counts[src_key][dest_key]) / float(b_surface_total_counts[src_key])
 
-	#b_surface_trans = process_trans_for_bd(b_surface_trans, inf_index)
-	q0 = trans_dict_to_q0_vector(b_surface_trans,K)
+	#b_surface_trans = _process_trans_for_bd(b_surface_trans, inf_index)
+	q0 = _trans_dict_to_q0_vector(b_surface_trans,K)
 
 	#print("q0", q0)
-	beta = get_beta_from_K_q0(K, q0, bound_indices)
+	beta = _get_beta_from_K_q0(K, q0, bound_indices)
 	#print("beta", beta)
-	k_b = run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
+	k_b = _run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
 	#print( "k(b):", k_b)
 	k_on = k_b * beta
 
 	return k_on
 
 
-def process_trans_for_bd(trans_dict, inf_index):
-  '''given a transition (or count) dictionary, will return a transition (or count) matrix'''
+def _process_trans_for_bd(trans_dict, inf_index):
+  '''
+  Not currently used
+  given a transition (or count) dictionary, will return a transition (or count) matrix
+  '''
   new_trans_dict = {}
   src_key = trans_dict.keys()[0] #get the source milestone
   new_src_key = src_key.split('_')[2]
@@ -353,7 +385,7 @@ def process_trans_for_bd(trans_dict, inf_index):
   return trans_dict
 
 
-def trans_dict_to_q0_vector(trans_dict, K,):
+def _trans_dict_to_q0_vector(trans_dict, K,):
 	'''given a transition matrix, will return a vector of starting fluxes based on b-surface stats.'''
 	n = K.shape[0]
 	#print("b trans_dict", trans_dict)
@@ -363,7 +395,7 @@ def trans_dict_to_q0_vector(trans_dict, K,):
 			q0_vector[int(key),0] = trans_dict[src_key][key]
 	return q0_vector
 
-def calc_MFPT_vec(Q):
+def _calc_MFPT_vec(Q):
 	Q_hat = Q[:-1,:-1]
 
 	#if verbose: print Q_hat
@@ -383,7 +415,7 @@ def calc_MFPT_vec(Q):
 
 	return T
 
-def rate_mat_to_prob_mat(Q):
+def _rate_mat_to_prob_mat(Q):
 	n = Q.shape[0]
 	K= np.matrix(np.zeros((n,n)))
 	sum_vector = np.zeros(n)
@@ -400,7 +432,7 @@ def rate_mat_to_prob_mat(Q):
 
 	return K
 
-def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
+def _run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 	'runs the Browndye program compute_rate_constant to find the value k(b)'
 	process_trajectories = os.path.join(browndye_bin_dir, "compute_rate_constant")
 	cmd = "%s < %s" % (process_trajectories, results_filename)
@@ -417,7 +449,7 @@ def run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 	k_b = k / beta # the flux to the b-surface
 	return k_b
 
-def get_beta_from_K_q0(K, q0, bound_indices):
+def _get_beta_from_K_q0(K, q0, bound_indices):
 	'given a transition matrix K and starting vector q_0, returns a beta value for k-ons'
 	K_inf = np.matrix(K) ** 99999999
 	#print("K inf", K_inf)
@@ -431,9 +463,53 @@ def get_beta_from_K_q0(K, q0, bound_indices):
 	return beta
 
 def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, skip = 100, stride =1,  verbose= False):
-	'''Samples distribution of rate matrices assumming a poisson (gamma) distribution with parameters Nij and Ri using Markov chain Monte Carlo
-		Enforces detailed Balance-- using a modified version of Algorithm 4 form Noe 2008 for rate matrices.--  
+	'''Calculates an error estimate by sampling a distribution of rate matrices assumming 
+	a poisson (gamma) distribution with parameters Nij and Ri using Markov chain Monte Carlo
+		
+	Enforces detailed Balance-- using a modified version of Algorithm 4 form Noe 2008 for rate matrices.--  
 	Distribution is:  p(Q|N) = p(Q)p(N|Q)/p(N) = p(Q) PI(q_ij**N_ij * exp(-q_ij * Ri))
+
+
+	Parameters
+	----------
+	model : object
+		milestoning model object containing all transition and milestone information
+	bound_indices : list
+		list of indices of all milestones to be treated as bound states
+	Q0 : numpy array
+		Initial rate matrix (from MLE estimate) on which perturbations will be made to obtain a distribution
+	N_pre : numpy array
+		inital count matrix used to generate rate matrix perturbations from a gamma distribution
+	R_pre : numpy arrray
+		initial transition time matrix used to generate rate matrix perturbations from a gamma distribution
+	p_equil : numpy array
+		equilibrium probabilities oof each Voronoi cell (generated from MLE estimate)
+	T_tot : numpy array
+		total simulation time in each Voronoi cell
+	num : int
+		number of rate matrix (Q) samples to be generated
+	skip : int
+		number of inital rate matrix samples to skip for "burn in"
+	stride : int
+		frequency at which rate matrix samples are recorded- larger frequency reduces correlation between samples
+	verbose : bool
+		allow additional verbosity/printing
+
+	Returns
+	-------
+	k_off_list : list
+		list of calculated k off values calculated from rate matrix samples
+	running_avg : list
+		average k off calculated at each sampling interval (used for plotting convergence)
+	running_std : list
+		standard deviation of k off calculated at each interval (used for plotting convergence)
+	k_on_list : list
+		list of calculated k on values calculated from rate matrix samples
+	k_on_avg : list
+		average k on calculated at each sampling interval (used for plotting convergence)
+	k_on_std : list
+		standard deviation of k on calculated at each interval (used for plotting convergence)
+
 	'''
 	m = N_pre.shape[0] #get size of count matrix
 	Q = Q0
@@ -508,7 +584,7 @@ def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equi
 					if verbose: print(Qnew)
 
 		if counter > skip and counter % stride == 0:
-				T_err = calc_MFPT_vec(Qnew)
+				T_err = _calc_MFPT_vec(Qnew)
 				k_off_list.append(1/T_err[0])
 				running_avg.append(np.average(k_off_list))
 				running_std.append(np.std(k_off_list))
@@ -522,6 +598,43 @@ def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equi
 
 def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, verbose=False,):
 	'''
+	Calculates the key MMVT quantities N, R, and Q as a function of simulation time
+	to estimate which milestones have been sufficiently sampled. 
+
+	Quantities are pulled from the data at step intervals determined by the conv_stride value 
+	with the option to skip steps from the beginning of the data with the skip variable
+
+	Parameters
+	-----------
+	model : object
+		milestoning model object containing all milestone and transition information
+	bound indices : list
+		list of integer indices of milestones to be treated as bound states
+	conv_stride : int
+		frequency at which a sample is pulled for N and R from the simulation data
+	skip : int
+		number of steps to be skipped from the beginning of each simulation
+	max_steps : int
+		total number of simulation steps to be used in the calculation
+	verbose: bool
+		allow additional printing
+
+	Returns
+	-------
+	N_conv: list
+		list of transition count matrix N for each convergence interval
+	R_conv : list
+		list of transition time matrix R for each convergence interval 
+	k_cell_conv : list
+		list of cell transition rates for each convergence interval
+	p_equil_conv : list
+		list of cell equilibrium probabilities for each convergence interval
+	k_off_conv : list
+		list of calculated off rate at each convergence interval
+	k_on_conv : list
+		list og calculated on rate at each convergence interval
+	conv_intervals : list
+		list of step numbers used for each convergence sample
 
 	'''
 	n_anchors = 0
@@ -532,7 +645,7 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 	max_step_list = np.zeros(n_anchors)
 	N_conv = np.zeros((15,15,len(conv_intervals)))
 	R_conv = np.zeros((15,15,len(conv_intervals)))
-	k_conv = np.zeros(len(conv_intervals))
+	k_off_conv = np.zeros(len(conv_intervals))
 	k_on_conv = np.zeros(len(conv_intervals))
 	k_cell_conv = np.zeros((15,15,len(conv_intervals)))
 	p_equil_conv = np.zeros((15,len(conv_intervals)))
@@ -553,10 +666,10 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 			k_cell_conv[index3[0]][index3[1]][interval_index]= z
 		for index4,j in np.ndenumerate(p_equil):
 			p_equil_conv[index4[0]][interval_index]= j   
-		k_conv[interval_index]=k_off
+		k_off_conv[interval_index]=k_off
 		k_on_conv[interval_index] = k_on
 
-	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_conv, k_on_conv, conv_intervals, 
+	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_off_conv, k_on_conv, conv_intervals, 
 
 def _add_dictionaries(dict1, dict2):
 	'''
@@ -635,17 +748,41 @@ def _find_conv_min(conv_values, conv_intervals, window_size, cutoff, conv_window
 
 
 def calc_RMSD_conv(model, N_conv, R_conv, conv_intervals, window_size, cutoff, conv_windows):
+	''' Estimate the convergence of sampling for each milestone using a sliding window RMSD cutoff
+	Milestones are considered converged when the values of BOTH N and R remain below the cutoff threshold for 
+	a specified number of windows.
+
+	The cutoff is a percentage of the magnutude of the corresponding value (e.g. less than 5% of the magnutude of N)
+
+	Parameters
+	-----------
+	model : object
+		milestoning model object containing all milestone information and transition statistics
+	N_conv: list
+		list of transition count matrix N for each convergence interval
+	R_conv : list
+		list of transition time matrix R for each convergence interval 
+	conv_intervals : list
+		list of stepnumbers for which convergence samples were extracted and calculated
+	window size : int
+		number of convergence samples used in a window RMSD calculation
+	cutoff : float
+		RMSD must be less than the cutoff times the magnitude of the quantity (N or R) to be considered converged
+	conv_windows : int
+		number of consecutive windows the RMSD must remain below the cutoff to be considered converged
+
+	Return
+	-------
+	min_anchor_times :list
+		list of times (in stepnumbers) for each voronoi cell where the convergence criteria are satisfied
+	'''
+
 	min_anchor_times = np.zeros((len(N_conv[0])))
 	#print(min_anchor_times)
 	print("Calculating N/T convergence")
 	n_conv_times = _find_conv_min(N_conv, conv_intervals, window_size, cutoff, conv_windows)
 	print("Calculating R/T convergence")
 	r_conv_times = _find_conv_min(R_conv, conv_intervals, window_size, cutoff, conv_windows)
-	
-	#print(n_conv_times)
-	#print(r_conv_times)
-
-
 
 	for site in model.sites:
 		for anchor in site.anchors:

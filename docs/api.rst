@@ -1,11 +1,16 @@
-API Documentation
+Documentation
 =================
 
 This section contains documentation for the python modules included in the MMVT_SEEKR package.
 
 .. autosummary::
-   :toctree: autosummary
+   :toctree: _autosummary
 
-   mmvt_seekr.model
-#   mmvt_seekr.analyze
-   mmvt_seekr.plots
+.. toctree::
+   :maxdepth: 3
+
+   model
+   analyze
+   plots
+
+   

@@ -30,7 +30,7 @@ python ../../seekr.py test.seekr
 
 Once this runs, you should find a new filetree in the location you specified with the 'rootdir' variable in the .seekr input file. Navigate to this location.
 
-Inside the top-level directory, you should finde multiple directories named 'anchor_#'. Each of these corresponds to one simulation cell whose edges are milestones we specified in the input file. You will also see a 'milestones.xml' file that containes information about each of the milestones and will be useful for analysis later.
+Inside the top-level directory, you should finde multiple directories named 'anchor_#'. Each of these corresponds to one simulation cell whose edges are milestones we specified in the input file. You will also see a 'milestones.xml' file that contains information about each of the milestones and will be useful for analysis later.
 
 Navigate into one of the anchor directories and you will notice another directory called 'md'. Some anchors may also have a 'bd' directory.
 Inside the 'md' directory are three more directories:

@@ -6,6 +6,9 @@
 
 """
 MMVT SEEKR module for building a milestoning model
+
+Extracts transition statistics from each anchor and generates a milestoning 
+model 
 """
 
 #=================================================
@@ -75,17 +78,17 @@ class Model():
       #self.index_dict = {}
       #...
 
-   def add_site(self, site): 
+   def _add_site(self, site): 
       """ append a new milestone site to this model"""
       self.sites.append(site)
       self.num_sites += 1
       #self.num_anchors += site.num_milestones
       #...
 
-   def make_index_dict(self):
+   def _make_index_dict(self):
       pass
 
-   def make_directories(self):
+   def _make_directories(self):
       """ determines which milestones have data stored in which directories"""
       i = 0
       for site in self.sites:
@@ -128,7 +131,7 @@ class Site():
       #self.center ?
       #..
   
-   def add_anchor(self, anchor):
+   def _add_anchor(self, anchor):
       """ add a new anchor to the site class
 
       Parameters
@@ -185,11 +188,11 @@ class Anchor():
       self.total_steps = 0
       self.offsets = {}
 
-   def add_milestone(self, milestone):
+   def _add_milestone(self, milestone):
       self.milestones.append(milestone)
       self.num_milestones += 1
 
-   def parse_md_transitions(self, ):
+   def _parse_md_transitions(self, ):
       """Finds all production simulation output files and parses for transition event strings.
          Creates Transition and Collision objects.
 
@@ -200,14 +203,12 @@ class Anchor():
 
       """
       forward_dir_glob = os.path.join(self.directory,'md','fwd_rev',FORWARD_OUTPUT_GLOB)
-      #print forward_dir_glob
       forward_output_filenames = sorted(glob.glob(forward_dir_glob))
       # read files and sift out the transition lines
       unsorted_transitions = []
       unsorted_collisions = []
       replicate = 1
       self.offsets[replicate] = 0
-      #print 'current max step' , info['max_steps']
       for filename in forward_output_filenames:
         transition_lines = []
         vt_collisions = []
@@ -222,7 +223,6 @@ class Anchor():
            if re.match(INITIAL_COLLISION_COMPILE, line): continue
            else:
             vt_collisions.append(line)
-            # print line
         #pprint(transition_lines)
       # feed the lines into the Transition object
         for line in transition_lines:
@@ -244,7 +244,7 @@ class Anchor():
       print('anchor', self.index, self.offsets)
       return self.total_steps
 
-   def get_md_transition_statistics(self, md_time_factor=DEFAULT_MD_TIME_FACTOR, max_step=None, ):
+   def _get_md_transition_statistics(self, md_time_factor=DEFAULT_MD_TIME_FACTOR, max_step=None, ):
       """Parse the transition data to obtain transition counts and times.
 
       Parameters
@@ -308,28 +308,70 @@ class Anchor():
 
       return counts, total_counts, total_times, avg_times
 
-   def get_md_vt_collisions(self, md_time_factor=DEFAULT_MD_TIME_FACTOR, max_step=None,):
+   def _get_md_vt_collisions(self, md_time_factor=DEFAULT_MD_TIME_FACTOR, max_step=None,):
+    """Parse the transition data to obtain all collisions with cell boundaries.
+
+    Parameters
+    ---------
+    self : object
+       the Anchor class object
+    md_time_factor : float, optional
+         time factor corresponding to length of a single MD timestep
+    max_step : int
+        maximum step number for parsing transitions, anything longer is neglected
+
+    Returns
+    ---------
+    cell_counts : dict
+        dictionary containing all cell collision statistics for the anchor
+    total_time : float
+      total time spent in the anchor
+    """
       
-      cell_counts = {}
-      for collision in self.collisions:
-        if max_step != None and int(collision.step + self.offsets[collision.replicate]) > max_step:
-         break
+    cell_counts = {}
+    for collision in self.collisions:
+      if max_step != None and int(collision.step + self.offsets[collision.replicate]) > max_step:
+       break
 
-        curr_cell = collision.curr_cell
-        new_cell = collision.new_cell   
-        if curr_cell in list(cell_counts.keys()):
-         if new_cell in list(cell_counts[curr_cell].keys()):
-           cell_counts[curr_cell][new_cell] += 1
-         else:
-           cell_counts[curr_cell][new_cell] = 1
-        else:
-         cell_counts[curr_cell] = {new_cell:1} 
-      total_time = collision.step *md_time_factor + self.offsets[collision.replicate] * md_time_factor 
+      curr_cell = collision.curr_cell
+      new_cell = collision.new_cell   
+      if curr_cell in list(cell_counts.keys()):
+       if new_cell in list(cell_counts[curr_cell].keys()):
+         cell_counts[curr_cell][new_cell] += 1
+       else:
+         cell_counts[curr_cell][new_cell] = 1
+      else:
+       cell_counts[curr_cell] = {new_cell:1} 
+    total_time = collision.step *md_time_factor + self.offsets[collision.replicate] * md_time_factor 
 
-      return cell_counts, total_time
+    return cell_counts, total_time
 
-   def get_bd_transition_statistics(self, results_filename="results.xml", bd_time=0.0):
-    'read the BD results.xml file for the anchors to determine transition statistics and times for the BD stage'
+   def _get_bd_transition_statistics(self, results_filename="results.xml", bd_time=0.0):
+    '''read the BD results.xml file for the anchors to determine transition statistics and 
+    times for the BD stage
+
+      Parameters
+      ---------
+      self : object
+         the Anchor class object
+      results_filename: string
+          name of file containing BD transition results
+      bd_time: float
+         time factor by which a bd timestep is scaled
+
+      Returns
+      ---------
+      counts : dict
+         dictionary containing BD milestone transition statistics
+      total_counts : dict
+         dictionary containing the total BD transition counts  
+      total_times : dict
+         dictionary containing the total BD simulation time
+      avg_times : dict
+         dictionary containing the average BD simulation time 
+
+
+    '''
     bd_results_filename = os.path.join(self.directory, results_filename)
     counts = {}
     total_counts = {}
@@ -337,7 +379,7 @@ class Anchor():
     avg_times = {}
     #src_key = '%s_%s' % (self.sitename, self.index)
     src_key = self.index
-    counts[src_key], total_times[src_key] = parse_bd_results(bd_results_filename)
+    counts[src_key], total_times[src_key] = _parse_bd_results(bd_results_filename)
     total_counts[src_key] = 0
     for dest_key in counts[src_key].keys():
       total_counts[src_key] += counts[src_key][dest_key]
@@ -437,7 +479,7 @@ class Transition():
 # Functions
 #======================================================
 
-def parse_milestoning_file(milestoning_filename):
+def _parse_milestoning_file(milestoning_filename):
    """given a milestoning file, will parse the XML and generate a model object.
 
    The model object contains all cell anchors
@@ -526,10 +568,10 @@ def parse_milestoning_file(milestoning_filename):
             end = milestone.find('end').text.strip()
             milestone_obj = Milestone(id, shape, end, normal, radius)
             if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
-            anchor_obj.add_milestone(milestone_obj)
-         site_obj.add_anchor(anchor_obj)
+            anchor_obj._add_milestone(milestone_obj)
+         site_obj._add_anchor(anchor_obj)
      
-      model.add_site(site_obj)
+      model._add_site(site_obj)
       site_counter += 1 
 
 
@@ -557,9 +599,25 @@ def add_dictionaries(dict1, dict2):
 
    return dict1
 
-def parse_bd_results(bd_results_filename):
-  ''' given a BD results file name, will open the file and extract information about state transitions'''
-  #bd_results_file = open(bd_results_filename, 'r')
+def _parse_bd_results(bd_results_filename):
+  ''' given a BD results file name, will open the file and extract information 
+  about state transitions
+
+    Parameters
+    --------
+    bd_results_filename : str
+      string corresponding to the name of the bd results file
+
+    Returns
+    ---------
+    bd_dict: dictionary
+      dictionary containing transition statistics for bd simulations
+    bd_time: float
+      total BD simulation time (if recorded by Browndye)
+    
+
+  '''
+  
   bd_dict = {}
   bd_time = None
   tree = ET.parse(bd_results_filename)
@@ -585,43 +643,43 @@ def parse_bd_results(bd_results_filename):
 
   return bd_dict, bd_time
 
-def parse_bound_state_args(bound_args):
-   """Parses a user-defined string corresponding to all bound states
+# def parse_bound_state_args(bound_args):
+#    """Parses a user-defined string corresponding to all bound states
 
-   Parameters
-   -----------
-   bound_args : str
-      string of bound state values
-      can use ',' or ':' for a range
+#    Parameters
+#    -----------
+#    bound_args : str
+#       string of bound state values
+#       can use ',' or ':' for a range
 
-   Returns
-   ----------
-   bound_dict : dict
-      dictionary of bound state indices
+#    Returns
+#    ----------
+#    bound_dict : dict
+#       dictionary of bound state indices
 
-   """
+#    """
 
-   bound_dict = {}
-   bound_pairs = bound_args.split(',')
-   for pair in bound_pairs:
-      # print 'PAIR'+ pair
-      site_index = pair.split(':')
-      # print site_index
-      if len(site_index) == 1:
-         site = 'all'
-         index = site_index[0]
-      elif len(site_index) == 2:
-         site = site_index[0]
-         index = site_index[1]
-      if site not in bound_dict:
-         bound_dict[site] = [index]
-      else:
-         bound_dict[site].append(index)
-         # print bound_dict
-   return bound_dict
+#    bound_dict = {}
+#    bound_pairs = bound_args.split(',')
+#    for pair in bound_pairs:
+#       # print 'PAIR'+ pair
+#       site_index = pair.split(':')
+#       # print site_index
+#       if len(site_index) == 1:
+#          site = 'all'
+#          index = site_index[0]
+#       elif len(site_index) == 2:
+#          site = site_index[0]
+#          index = site_index[1]
+#       if site not in bound_dict:
+#          bound_dict[site] = [index]
+#       else:
+#          bound_dict[site].append(index)
+#          # print bound_dict
+#    return bound_dict
 
 
-def read_transition_statistics_from_files(model, verbose):
+def _read_transition_statistics_from_files(model, verbose):
    """Parses the transitions statistics from the simulation output files for later analysis
 
    Parameters
@@ -636,8 +694,6 @@ def read_transition_statistics_from_files(model, verbose):
       total number of MD steps taken in all simulations in all anchors
 
    """
-   #info = {'max_steps':0, }
-   #info = {}
    total_steps = 0
    for site in model.sites:
       for anchor in site.anchors:
@@ -645,7 +701,7 @@ def read_transition_statistics_from_files(model, verbose):
             #if verbose: print 'parsing md transitions for:Anchor', milestone.fullname
             #print info['max_steps']
             print('parsing md transitions for:Anchor', anchor.fullname)
-            max_steps = anchor.parse_md_transitions()
+            max_steps = anchor._parse_md_transitions()
             print(max_steps, total_steps)
             if max_steps > total_steps:
               total_steps = max_steps
@@ -675,8 +731,8 @@ def make_model( milestone_filename="milestones.xml", verbose=False):
    """
 
    #bound_dict = parse_bound_state_args(bound_states)
-   model = parse_milestoning_file(milestone_filename)
-   max_steps = read_transition_statistics_from_files(model, verbose)
+   model = _parse_milestoning_file(milestone_filename)
+   max_steps = _read_transition_statistics_from_files(model, verbose)
 
    return model, max_steps
 

@@ -1,22 +1,16 @@
+#!/usr/bin/env python
+
+#===============================================
+# MODULE DOCSTRING
+#=================================================
+
 """
-make_model.py
-Simulation Enabled Estimation of Kinetic Rates (SEEKR) is a tool that facilitates the preparation, running and analysis of multiscale MD/BD/Milestoning  simulations for the calculation of protein-ligand binding kinetics.
-
-extracts transition information from the simulation output files and creates the milestoning model
-
-Parameters
-		----------
-		milestone_filename : string Required 
-				name of the XML file containing all information regarding simulation directories, parameters, etc.
-
-		Returns
-		-------
-		model : class 
-				contains all required information for milestoning analysis
-
-		max_steps : int 
-				total number of s
+MMVT SEEKR module for plotting many useful quantities from milestoning analysis 
 """
+
+#=================================================
+#GLOBAL IMPORTS
+#=================================================
 import matplotlib.pyplot as plt
 import pickle 
 import numpy as np
@@ -25,6 +19,25 @@ from itertools import islice
 
 
 def plot_n_conv(conv_values, conv_intervals):
+	'''
+	Plot convergence of transition counts (N) for each milestone
+
+	Parameters
+	----------
+	conv_values : list
+		list of calculated N matrix for each convergence interval
+	conv_interval : list
+		list of convergence interval step numbers for which samples are taken
+
+	Returns
+	-------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object
+
+	'''
+
 	fig, ax = plt.subplots()
 	new_colors = [plt.get_cmap('tab20')(1.* i/(_get_colormap(conv_values))) for i in range(_get_colormap(conv_values))]
 	plt.rc('axes', prop_cycle=(cycler('color', new_colors)))
@@ -46,6 +59,24 @@ def plot_n_conv(conv_values, conv_intervals):
 	return fig, ax
 
 def plot_r_conv(conv_values, conv_intervals):
+	'''
+	Plot convergence of transition times (R) for each milestone
+
+	Parameters
+	----------
+	conv_values : list
+		list of calculated R matrix for each convergence interval
+	conv_interval : list
+		list of convergence interval step numbers for which samples are taken
+
+	Returns
+	-------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object
+
+	'''
 	fig, ax = plt.subplots()
 	new_colors = [plt.get_cmap('tab20')(1.* i/(_get_colormap(conv_values))) for i in range(_get_colormap(conv_values))]
 	plt.rc('axes', prop_cycle=(cycler('color', new_colors)))
@@ -75,6 +106,24 @@ def _get_colormap(conv_values):
 	return cmap_length
 
 def plot_p_equil(conv_values, conv_intervals):
+	'''
+	Plot convergence of Voronoi cell equilibrium probabilities 
+
+	Parameters
+	----------
+	conv_values : list
+		list of equilibrium probabilities for each convergance interval
+	conv_interval : list
+		list of convergence interval step numbers for which samples are taken
+
+	Returns
+	-------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object
+
+	'''
 	fig, ax = plt.subplots()
 	new_colors = [plt.get_cmap('tab20')(1.* i/conv_values.shape[0]) for i in range(conv_values.shape[0])]
 	plt.rc('axes', prop_cycle=(cycler('color', new_colors)))
@@ -89,7 +138,25 @@ def plot_p_equil(conv_values, conv_intervals):
 	plt.grid(b=True,axis = 'y', which = 'both')
 	return fig, ax
 
-def plot_k_conv(conv_values, conv_intervals):
+def plot_k_off_conv(conv_values, conv_intervals):
+	'''
+	Plot convergence of off rate as a function of simulation time
+
+	Parameters
+	----------
+	conv_values : list
+		list of calculated off rates for each convergence interval
+	conv_interval : list
+		list of convergence interval step numbers for which samples are taken
+
+	Returns
+	-------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object
+
+	'''
 	fig, ax = plt.subplots()
 	ax.plot(np.multiply(conv_intervals,2e-6), conv_values, linestyle='-', marker="o", markersize = 1)
 	plt.ylabel('k off (s^-1)')
@@ -98,6 +165,26 @@ def plot_k_conv(conv_values, conv_intervals):
 	return fig, ax
 
 def MCMC_conv(running_avg, running_std):
+	'''
+	Plot the convergence of rate constant and standard deviation from the MCMC sampling
+
+	Parameters
+	-----------
+	running_avg : list
+		average k off calculated at each sampling interval 
+	running_std : list
+		standard deviation of k off calculated at each interval
+
+	Returns
+	--------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object for rate plot
+	ax2 : object
+		matplotlib Axes object for standard deviation plot
+
+	'''
 	fig = plt.figure()
 	ax = fig.add_subplot(2,1,1,)
 	ax.plot(running_avg)
@@ -137,6 +224,27 @@ def _calc_window_rmsd(conv_values):
     return RMSD
 
 def plot_window_rmsd(conv_values, conv_intervals, window,):
+	'''
+	Plot the RMSD values calculated from RMSD window convergence estimate
+	as a function of simulation time
+
+	Parameters
+	-----------
+	conv_values : list
+		list of RMSD values to be plotted
+	conv_intervals : list
+		list of step numbers for each convergence interval
+	window : int
+		size of the window in step numbers
+
+	Returns
+	--------
+	fig : matplotlib figure
+		matplotlib figure plotting N convergence for each milestone
+	ax : object
+		matplotlib Axes object 
+	
+	'''
 	rmsd_list = []
 	fig, ax = plt.subplots()
 	new_colors = [plt.get_cmap('tab20')(1.* i/(_get_colormap(conv_values))) for i in range(_get_colormap(conv_values))]
