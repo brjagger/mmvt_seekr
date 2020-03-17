@@ -1,0 +1,29 @@
+source leaprc.protein.ff14SB
+source leaprc.gaff
+source leaprc.water.tip4pew
+set default FlexibleWater on
+set default PBRadii mbondi2
+loadoff /scratch/bjagger/projects/seekr/tryp_prep/trypsin_files/Ca2.lib
+loadoff /scratch/bjagger/projects/seekr/tryp_prep/trypsin_files/benzamidine.lib
+loadamberparams /scratch/bjagger/projects/seekr/tryp_prep/trypsin_files/benzamidine.frcmod
+WAT= T4E
+HOH= T4E
+loadAmberParams frcmod.ionsjc_tip4pew
+loadAmberParams frcmod.tip4pew
+
+holo = loadpdb /scratch/bjagger/projects/seekr/tryp_vt/anchor_4_4_site1_-0.7_18.8_19.9_0/md/holo_wet.pdb
+
+bond holo.7.SG holo.137.SG
+bond holo.25.SG holo.41.SG
+bond holo.109.SG holo.210.SG
+bond holo.116.SG holo.183.SG
+bond holo.148.SG holo.162.SG
+bond holo.173.SG holo.197.SG
+charge holo
+check holo
+
+saveamberparm holo /scratch/bjagger/projects/seekr/tryp_vt/anchor_4_4_site1_-0.7_18.8_19.9_0/md/building/holo.parm7 /scratch/bjagger/projects/seekr/tryp_vt/anchor_4_4_site1_-0.7_18.8_19.9_0/md/building/holo.rst7
+
+savepdb holo  /scratch/bjagger/projects/seekr/tryp_vt/anchor_4_4_site1_-0.7_18.8_19.9_0/md/building/holo_leap.pdb
+
+quit

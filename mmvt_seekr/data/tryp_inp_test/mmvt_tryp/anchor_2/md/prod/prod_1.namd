@@ -1,0 +1,147 @@
+#**********************************************************
+#  Name SEEKR MMVT Production
+#  Date 2020-03-17
+#  * Generated with the SEEKR Automatic NAMD input file generator
+#**********************************************************
+
+set inpname	../equil/equil_1
+set outname	prod_1
+firsttimestep	        0
+
+
+# Input Files
+parmfile                ../building/holo.parm7
+ambercoor               ../building/holo.rst7
+binCoordinates          $inpname.restart.coor
+temperature             298
+extendedSystem          $inpname.restart.xsc
+watermodel              tip4p
+
+
+# Output
+xstFile                 $outname.xst
+xstFreq                 100000
+outputname              $outname
+dcdfile                 $outname.dcd
+restartname             $outname.restart
+restartfreq             100000
+dcdfreq                 100000
+binaryoutput            yes
+outputEnergies          100000
+outputtiming            100000
+
+
+# Simulation Parameters
+amber                   yes
+readExclusions          yes
+exclude                 scaled1-4
+1-4scaling              0.833333
+scnb                    2.0
+cutoff                  8 
+switching               off 
+margin                  0.0
+zeroMomentum            on
+ljCorrection            on
+rigidBonds              all
+rigidTolerance          1e-8
+rigidIterations         100
+useSettle               on
+
+
+# Integrator Parameters
+timestep                2.0
+nonbondedFreq           1
+FullElectFrequency      1
+stepspercycle           10
+
+
+# Particle Mesh Ewald (PME) Settings
+PME                     yes
+PMEGridSpacing          1.0
+
+
+# Constant Temperature Control
+langevin                on
+langevinTemp            298
+langevinDamping         5
+langevinHydrogen        no
+
+
+# Pressure Control
+useGroupPressure        no
+useFlexibleCell         no
+useConstantArea         no
+
+
+# Periodic Boundary Conditions (PBC)
+wrapWater               on
+wrapAll                 off
+wrapNearest             on
+
+
+ # Collective Variables (Colvars)
+colvars                 on
+colvarsConfig           colvars.script
+
+
+
+
+
+set crossing 		0
+set whoami 		none
+set incubation_time 		0
+set max_steps 		20000000
+set EVAL_STRIDE 		10
+
+set CURR_ANCHOR 		2
+set LOWER_ANCHOR 		1
+set LOWER_MILESTONE 		2
+set LOWER_BOUND 		4.0
+set UPPER_ANCHOR 		3
+set UPPER_MILESTONE 		3
+set UPPER_BOUND 		6.0
+
+
+
+
+
+for {set stepnum 0} {$stepnum < $max_steps} {incr stepnum 10} {
+  run $EVAL_STRIDE
+  set cv_val [cv colvar milestone1 value]
+
+  if {$cv_val <= $LOWER_BOUND} {
+    if {$rev_last} {
+      print "trajectory stuck"
+      }
+          puts "SEEKR: Cell Collision: current: $CURR_ANCHOR, new: $LOWER_ANCHOR, stepnum: $stepnum"
+          if {$whoami != $LOWER_MILESTONE} {
+            puts "SEEKR: Milestone Transition: anchor: $CURR_ANCHOR, source: $whoami, destination: $LOWER_MILESTONE, stepnum: $stepnum, incubation time: $incubation_time"
+            set incubation_time 0
+            }
+        revert
+        rescalevels -1
+        checkpoint
+        set rev_last True
+        set whoami $LOWER_MILESTONE
+
+    } elseif {$cv_val >= $UPPER_BOUND} {
+      if {$rev_last} {
+      print "trajectory stuck"
+      }
+        puts "SEEKR: Cell Collision: current: $CURR_ANCHOR, new: $UPPER_ANCHOR, stepnum: $stepnum"
+        if {$whoami != $UPPER_MILESTONE} {
+         puts "SEEKR: Milestone Transition: anchor: $CURR_ANCHOR, source: $whoami, destination: $UPPER_MILESTONE, stepnum: $stepnum, incubation time: $incubation_time"
+         set incubation_time 0
+         }
+        revert
+        rescalevels -1
+        checkpoint
+        set rev_last True
+        set whoami $UPPER_MILESTONE
+
+    } else {
+       checkpoint
+       set rev_last False
+       }
+   incr incubation_time $EVAL_STRIDE
+} 
