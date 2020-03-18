@@ -1,6 +1,6 @@
 """
 seekr.py
-control script for generating all input files for SEEKR calculation
+main script for generating all input files for SEEKR calculation
 
 Parameters
 		----------

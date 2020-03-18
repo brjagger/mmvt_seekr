@@ -479,7 +479,7 @@ class Transition():
 # Functions
 #======================================================
 
-def _parse_milestoning_file(milestoning_filename):
+def parse_milestoning_file(milestoning_filename):
    """given a milestoning file, will parse the XML and generate a model object.
 
    The model object contains all cell anchors
@@ -731,7 +731,7 @@ def make_model( milestone_filename="milestones.xml", verbose=False):
    """
 
    #bound_dict = parse_bound_state_args(bound_states)
-   model = _parse_milestoning_file(milestone_filename)
+   model = parse_milestoning_file(milestone_filename)
    max_steps = _read_transition_statistics_from_files(model, verbose)
 
    return model, max_steps

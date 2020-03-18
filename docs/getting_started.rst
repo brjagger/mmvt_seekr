@@ -1,12 +1,12 @@
 Getting Started
 ===============
 
-This page details how to get started with mmvt_seekr. 
+This page details how to get started with MMVT SEEKR. 
 
 Installation
 ------------
 
-Instructions for installing MMVT can be found at:
+Instructions for installing MMVT SEEKR can be found at:
 
 
 

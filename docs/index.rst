@@ -3,9 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to mmvt_seekr's documentation!
-=========================================================
+.. image:: ./seekr_logo.png
 
+|
+|
+
+Welcome to MMVT SEEKR's documentation!
+=========================================================
+Simulation Enabled Estimation of Kinetic Rates (SEEKR) is a multi-scale molecular dynamics and Brownian dynamics simulation based approach for calculating ligang binding kinetics using Markovian Milestoning with Voronoi Tesselations (MMVT) theory.
 
 
 .. toctree::
@@ -13,8 +18,6 @@ Welcome to mmvt_seekr's documentation!
    :caption: Contents:
 
    getting_started 
-
-   
 
 .. toctree::
    :maxdepth: 2
