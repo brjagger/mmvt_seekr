@@ -335,11 +335,20 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 	xmlbd_time_factor_text = ourdoc.createTextNode(str(bd_time_factor))
 	xmlbd_time_factor.appendChild(xmlbd_time_factor_text)
 	
+	site_counter = 0
+
+	##Currently only configured for a single site! TODO
+	xmlsite = ourdoc.createElement("site")
+	root.appendChild(xmlsite)
+	xmlsitename = ourdoc.createElement("name")
+	xmlsite.appendChild(xmlsitename)
+	xmlsitetext = ourdoc.createTextNode("site_0")
+	xmlsitename.appendChild(xmlsitetext)
 
 	anchor_counter = 0
 	for anchor in anchor_list:
 		xmlanchor = ourdoc.createElement("anchor")
-		root.appendChild(xmlanchor)
+		xmlsite.appendChild(xmlanchor)
 		xmlanchorname = ourdoc.createElement("name")
 		xmlanchor.appendChild(xmlanchorname)
 		xmlanchortext = ourdoc.createTextNode(str(anchor['name']))

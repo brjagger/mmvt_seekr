@@ -531,8 +531,8 @@ def parse_milestoning_file(milestoning_filename):
       for anchor in branch: #iterate through each anchor in the site
          if anchor.tag != "anchor": continue #ensure we are reading voronoi anchors
          index = anchor.find('index').text.strip()
-         coord = anchor.find('coord').text.strip()
-         fullname = anchor.find('fullname')
+         #coord = anchor.find('coord').text.strip()
+         fullname = anchor.find('name')
          if fullname != None:
             fullname = fullname.text.strip() # parse all the attributes of the milestone
          else: # then just name it by its anchor
