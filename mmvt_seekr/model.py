@@ -202,7 +202,7 @@ class Anchor():
       the total number of steps taken for this anchor 
 
       """
-      forward_dir_glob = os.path.join(self.directory,'md','fwd_rev',FORWARD_OUTPUT_GLOB)
+      forward_dir_glob = os.path.join(self.directory,FORWARD_OUTPUT_GLOB)
       forward_output_filenames = sorted(glob.glob(forward_dir_glob))
       # read files and sift out the transition lines
       unsorted_transitions = []
@@ -346,7 +346,7 @@ class Anchor():
 
     return cell_counts, total_time
 
-   def _get_bd_transition_statistics(self, results_filename="results.xml", bd_time=0.0):
+   def get_bd_transition_statistics(self, results_filename="results.xml", bd_time=0.0):
     '''read the BD results.xml file for the anchors to determine transition statistics and 
     times for the BD stage
 
@@ -409,15 +409,15 @@ class Milestone():
 
 
    """
-   def __init__(self, id, shape, end, normal=None, radius=None, ):
+   def __init__(self, id, group, value=None, ):
       self.id = id # most of this information is read from the provided milestone.xml file
-      self.shape = shape
-      self.end = end.lower()
+      self.group = group
+      #self.end = end.lower()
       #self.fullname = fullname
       #self.directory = directory
       #self.anchor = anchor
-      self.normal = normal
-      self.radius = radius
+      #self.normal = normal
+      self.value = value
       #self.bd = bd
       #self.md = md
       #self.site = siteindex
@@ -479,7 +479,7 @@ class Transition():
 # Functions
 #======================================================
 
-def parse_milestoning_file(milestoning_filename):
+def _parse_milestoning_file(milestoning_filename):
    """given a milestoning file, will parse the XML and generate a model object.
 
    The model object contains all cell anchors
@@ -544,7 +544,7 @@ def parse_milestoning_file(milestoning_filename):
             directory = None
          bd =boolean(anchor.find('bd').text.strip())
          md =boolean(anchor.find('md').text.strip())
-         anchor_obj = Anchor(index, md, bd, fullname, directory, site_counter, site_name, coord) 
+         anchor_obj = Anchor(index, md, bd, fullname, directory, site_counter, site_name,) 
       
 
          for milestone in anchor: #read all of the milestones in this anchor
@@ -552,21 +552,23 @@ def parse_milestoning_file(milestoning_filename):
             id = milestone.find('id').text
             radius = None
             normal = None
-            shape_xml = milestone.find('shape')
-            if shape_xml != None:
-               shape = shape_xml.text.strip()
-            else:
-               shape = DEFAULT_SHAPE # by default
-            if shape == "plane": # get other information based on the milestone shape
+            group_xml = milestone.find('group')
+            if group_xml != None:
+               group = group_xml.text.strip()
+            #else:
+            #   shape = DEFAULT_SHAPE # by default
+            #if shape == "plane": # get other information based on the milestone shape
                #  anchor = milestone.find('anchor').text.strip()
-               normal = milestone.find('normal').text.strip()
-            elif shape == "sphere":
+            #   normal = milestone.find('normal').text.strip()
+            #elif shape == "sphere":
                #  anchor = milestone.find('anchor').text.strip()
-               radius = milestone.find('radius').text.strip()
-            elif shape == "rotational":
-               pass
-            end = milestone.find('end').text.strip()
-            milestone_obj = Milestone(id, shape, end, normal, radius)
+            #   radius = milestone.find('radius').text.strip()
+            #elif shape == "rotational":
+            #   pass
+            #end = milestone.find('end').text.strip()
+            value_xml = milestone.find("value")
+            value = value_xml.text.strip()
+            milestone_obj = Milestone(id, group, value)
             if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
             anchor_obj._add_milestone(milestone_obj)
          site_obj._add_anchor(anchor_obj)
@@ -731,7 +733,7 @@ def make_model( milestone_filename="milestones.xml", verbose=False):
    """
 
    #bound_dict = parse_bound_state_args(bound_states)
-   model = parse_milestoning_file(milestone_filename)
+   model = _parse_milestoning_file(milestone_filename)
    max_steps = _read_transition_statistics_from_files(model, verbose)
 
    return model, max_steps

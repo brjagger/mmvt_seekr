@@ -364,6 +364,15 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 		xmltext = ourdoc.createTextNode(str(anchor['directory']))
 		xmlanchordir.appendChild(xmltext)
 
+		xmlmd = ourdoc.createElement("md")
+		xmlanchor.appendChild(xmlmd)
+		xmltext = ourdoc.createTextNode("True")
+		xmlmd.appendChild(xmltext)
+
+		xmlbd = ourdoc.createElement("bd")
+		xmlanchor.appendChild(xmlbd)
+		xmltext = ourdoc.createTextNode("False")
+		xmlbd.appendChild(xmltext)
 
 		for milestone_group in anchor['milestone_params']:
 			xmlmilestone = ourdoc.createElement("milestone")
@@ -401,6 +410,8 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 			xmlmilestone.appendChild(xmlelement)
 			xmltext = ourdoc.createTextNode(str(milestone_group['upper_bound']))
 			xmlelement.appendChild(xmltext)
+
+
 
 
 		anchor_counter += 1

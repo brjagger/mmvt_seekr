@@ -312,7 +312,7 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#print("K", K)
 
 	#extract BD milestone statistics for infinity state
-	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone._get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
+	bd_counts, bd_total_counts, bd_total_times, bd_avg_times = model.bd_milestone.get_bd_transition_statistics(results_filename ="results.xml", bd_time=bd_time)
 
 	src_key = model.bd_milestone.index
 	#print("src_key", src_key)
@@ -339,7 +339,7 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#print("k trans", K)
 
 	#extract BD statistics from B surface calculation
-	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface._get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
+	b_surface_counts, b_surface_total_counts, b_surface_total_times, b_surface_avg_times = model.b_surface.get_bd_transition_statistics(results_filename="results.xml", bd_time=bd_time)
 	#print(b_surface_counts)
 	#src_key = b_surface_counts[0]
 	src_key = model.b_surface.index
@@ -462,7 +462,7 @@ def _get_beta_from_K_q0(K, q0, bound_indices):
 		beta += q_inf[bound_index, 0]
 	return beta
 
-def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equil, T_tot, num = 1000, skip = 100, stride =1,  verbose= False):
+def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equil, T_tot, do_on = False, num = 1000, skip = 100, stride =1,  verbose= False):
 	'''Calculates an error estimate by sampling a distribution of rate matrices assumming 
 	a poisson (gamma) distribution with parameters Nij and Ri using Markov chain Monte Carlo
 		
@@ -588,15 +588,16 @@ def monte_carlo_milestoning_error(model, bound_indices, Q0, N_pre, R_pre, p_equi
 				k_off_list.append(1/T_err[0])
 				running_avg.append(np.average(k_off_list))
 				running_std.append(np.std(k_off_list))
-				k_on_list.append(calc_kon_from_bd(model,bound_indices, Qnew))
-				k_on_avg.append(np.average(k_on_list))
-				k_on_std.append(np.std(k_on_list))	
+				if do_on:
+					k_on_list.append(calc_kon_from_bd(model,bound_indices, Qnew))
+					k_on_avg.append(np.average(k_on_list))
+					k_on_std.append(np.std(k_on_list))	
  
 		Q = Qnew
 	if verbose: print("final MCMC matrix", Q)
 	return k_off_list, running_avg, running_std, k_on_list, k_on_avg, k_on_std  
 
-def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, verbose=False,):
+def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_steps, do_on= False, verbose=False,):
 	'''
 	Calculates the key MMVT quantities N, R, and Q as a function of simulation time
 	to estimate which milestones have been sufficiently sampled. 
@@ -656,7 +657,9 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 
 		MFPT = T[0]
 		k_off = 1/MFPT
-		k_on = calc_kon_from_bd(model, bound_indices, Q)
+		if do_on: 
+			k_on = calc_kon_from_bd(model, bound_indices, Q)
+			k_on_conv[interval_index] = k_on
 
 		for index, x in np.ndenumerate(n_conv):
 				N_conv[index[0]][index[1]][interval_index]=x
@@ -667,7 +670,7 @@ def check_milestone_convergence(model, bound_indices, conv_stride, skip, max_ste
 		for index4,j in np.ndenumerate(p_equil):
 			p_equil_conv[index4[0]][interval_index]= j   
 		k_off_conv[interval_index]=k_off
-		k_on_conv[interval_index] = k_on
+		
 
 	return N_conv, R_conv, k_cell_conv, p_equil_conv, k_off_conv, k_on_conv, conv_intervals, 
 
