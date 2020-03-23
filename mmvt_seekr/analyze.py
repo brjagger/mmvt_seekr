@@ -417,7 +417,7 @@ def _calc_MFPT_vec(Q):
 
 def _rate_mat_to_prob_mat(Q):
 	n = Q.shape[0]
-	K= np.matrix(np.zeros((n,n)))
+	K= np.zeros((n,n))
 	sum_vector = np.zeros(n)
 	
 	for i in range(n):
@@ -451,7 +451,7 @@ def _run_compute_rate_constant(results_filename, browndye_bin_dir=""):
 
 def _get_beta_from_K_q0(K, q0, bound_indices):
 	'given a transition matrix K and starting vector q_0, returns a beta value for k-ons'
-	K_inf = np.matrix(K) ** 99999999
+	K_inf = K ** 99999999
 	#print("K inf", K_inf)
 	#n,m = K_inf.shape
 	q_inf = np.dot(K_inf, q0)

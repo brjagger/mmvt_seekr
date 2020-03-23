@@ -1,0 +1,7 @@
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 270
+SEEKR: Milestone Transition: anchor: 1, source: none, destination: 1, stepnum: 270, incubation time: 270
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 1900
+SEEKR: Cell Collision: current: 1, new: 2, stepnum: 291620
+SEEKR: Milestone Transition: anchor: 1, source: 1, destination: 2, stepnum: 291620, incubation time: 291350
+SEEKR: Cell Collision: current: 1, new: 0, stepnum: 298140
+SEEKR: Milestone Transition: anchor: 1, source: 2, destination: 1, stepnum: 298140, incubation time: 6520

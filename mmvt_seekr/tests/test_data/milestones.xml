@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+<root>
+  <temperature>123</temperature>
+  <md_time_factor>456</md_time_factor>
+  <bd_time_factor>1</bd_time_factor>
+  <site>
+    <name>site_0</name>
+    <anchor>
+      <name>anchor_0</name>
+      <index>0</index>
+      <directory>./test_data/test_filetree/anchor_0/md/prod</directory>
+      <md>True</md>
+      <bd>False</bd>
+      <milestone>
+        <id>0</id>
+        <group>group1</group>
+        <value>1.0</value>
+      </milestone>
+      <milestone>
+        <id>1</id>
+        <group>group1</group>
+        <value>2.0</value>
+      </milestone>
+    </anchor>
+    <anchor>
+      <name>anchor_1</name>
+      <index>1</index>
+      <directory>./test_data/test_filetree/anchor_1/md/prod</directory>
+      <md>True</md>
+      <bd>False</bd>
+      <milestone>
+        <id>1</id>
+        <group>group1</group>
+        <value>2.0</value>
+      </milestone>
+      <milestone>
+        <id>2</id>
+        <group>group1</group>
+        <value>4.0</value>
+      </milestone>
+    </anchor>
+  </site>
+</root>
