@@ -2,58 +2,58 @@ colvarstrajfrequency         $colvarstrajfrequency
 colvarsrestartfrequency      $colvarsrestartfrequency
 
 
-{% if $milestone1 %}
+{% if $milestone_group1 %}
 colvar {
   name milestone1
   outputappliedforce         off
-  $milestone1_colvar_type {
-    group1 { atomnumbers $milestone1_group1}
-    group2 { atomnumbers $milestone1_group2}
+  $milestone_group1_colvar_type {
+    group1 { atomnumbers $milestone_group1_group1}
+    group2 { atomnumbers $milestone_group1_group2}
   }
 }
 
 # given the values provided by the above colvar(s), will apply a force to center the colvars
 {% if $restrained =='yes'%}harmonic {
   colvars milestone1
-  forceConstant             $milestone1_equil_rest_force            #force constant kcal/mol-angstrom^2
-  centers                   $milestone1_centers       # equilibrium value at which the restraints are centered
+  forceConstant             $milestone_group1_equil_rest_force            #force constant kcal/mol-angstrom^2
+  centers                   $milestone_group1_centers       # equilibrium value at which the restraints are centered
   }
 
 
   {% endif %}{% endif %}
 
-{% if $milestone2 %}
+{% if $milestone_group2 %}
 colvar {
   name milestone2
   outputappliedforce         off
-  $milestone2_colvar_type {
-    group1 { atomnumbers $milestone2_group1}
-    group2 { atomnumbers $milestone2_group2}
+  $milestone_group2_colvar_type {
+    group1 { atomnumbers $milestone_group2_group1}
+    group2 { atomnumbers $milestone_group2_group2}
   }
 }
 
 # given the values provided by the above colvar(s), will apply a force to center the colvars
 {% if $restrained =='yes'%}harmonic {
   colvars milestone2
-  forceConstant             $milestone2_equil_rest_force            #force constant kcal/mol-angstrom^2
-  centers                   $milestone2_centers       # equilibrium value at which the restraints are centered
+  forceConstant             $milestone_group2_equil_rest_force            #force constant kcal/mol-angstrom^2
+  centers                   $milestone_group2_centers       # equilibrium value at which the restraints are centered
   }
   {% endif %}{% endif %}
 
-{% if $milestone3 %}
+{% if $milestone_group3 %}
 colvar {
   name milestone3
   outputappliedforce         off
-  $milestone3_colvar_type {
-    group1 { atomnumbers $milestone3_group1}
-    group2 { atomnumbers $milestone3_group2}
+  $milestone_group3_colvar_type {
+    group1 { atomnumbers $milestone_group3_group1}
+    group2 { atomnumbers $milestone_group3_group2}
   }
 }
 
 # given the values provided by the above colvar(s), will apply a force to center the colvars
 {% if $restrained =='yes'%}harmonic {
   colvars milestone3
-  forceConstant             $milestone3_equil_rest_force            #force constant kcal/mol-angstrom^2
-  centers                   $milestone3_centers       # equilibrium value at which the restraints are centered
+  forceConstant             $milestone_group3_equil_rest_force            #force constant kcal/mol-angstrom^2
+  centers                   $milestone_group3_centers       # equilibrium value at which the restraints are centered
   }
   {% endif %}{% endif %}

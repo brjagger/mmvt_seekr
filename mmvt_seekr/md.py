@@ -31,7 +31,7 @@ def _gen_anchor_milestone_params(milestones, anchor_index):
 	for milestone in milestones:
 		milestone_param_dict = {}
 		milestone_pair = milestone['%s_pair_list' %milestone['key']][anchor_index]
-		milestone_param_dict['group'] = milestone['key']
+		milestone_param_dict['milestone_group'] = milestone['key']
 		milestone_param_dict['milestone_pair'] = milestone_pair
 		milestone_param_dict['lower_bound'] = float(milestone_pair[0])
 		milestone_param_dict['upper_bound'] = float(milestone_pair[1])

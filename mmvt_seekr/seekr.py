@@ -124,7 +124,7 @@ def _get_sys_params(inp):
 		'lig_pqr_filename':inp['lig_pqr_filename'], #for BD simulations
 		'rec_dry_pdb_filename':inp['rec_dry_pdb_filename'],
 		'rec_dry_pqr_filename':inp['rec_dry_pqr_filename'], #for BD simulations
-		'rec_pdb_filename':inp['rec_pdb_filename'],
+		#'rec_pdb_filename':inp['rec_pdb_filename'],
 		'empty_rootdir':_boolean(inp['empty_rootdir']),
 		'md_time_factor': inp['md_time_factor'],
 		'bd_time_factor' : inp['bd_time_factor'],
@@ -248,7 +248,7 @@ def _boolean(arg):
 def _parse_milestone_inputs(inp):
 	milestones = []
 	for key in sorted(inp.keys()):
-		if re.match("group[0-9]+", key):
+		if re.match("milestone_group[0-9]+", key):
 			milestone_dict = {'key': key}
 			milestone_name = key
 			for param in inp[key].split(','):
@@ -451,13 +451,13 @@ def _load_structures(inp, sys_params,):
 	receptor_pkl_dry_pqr_filename = os.path.join(inp['rootdir'], "receptor_dry_pqr.pkl")
 
 	ligand=pickle_or_load(sys_params['lig_pqr_filename'], ligand_pkl_filename, struc_name="ligand", pqr=True)
-	receptor=pickle_or_load(sys_params['rec_pdb_filename'], receptor_pkl_filename, struc_name="receptor", pqr=False)
+	#receptor=pickle_or_load(sys_params['rec_pdb_filename'], receptor_pkl_filename, struc_name="receptor", pqr=False)
 	receptor_dry=pickle_or_load(sys_params['rec_dry_pdb_filename'], receptor_pkl_dry_filename, struc_name="receptor_dry", pqr=False)
 	receptor_dry_pqr=pickle_or_load(sys_params['rec_dry_pqr_filename'], receptor_pkl_dry_pqr_filename, struc_name="receptor_dry_pqr", pqr=True)
 
 	struct={ # all parameters pertaining to structure
 		'ligand':ligand,
-		'receptor':receptor,
+		#'receptor':receptor,
 		'receptor_dry':receptor_dry, # or create a function that will remove all waters, complicated by ions
 		'receptor_dry_pqr':receptor_dry_pqr,
 		'rec_com':pdb.center_of_mass(receptor_dry), # have to take into account the center of mass of the receptor itself
