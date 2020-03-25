@@ -217,6 +217,8 @@ def _get_bd_settings(inp, sys_params, struct):
 	},
 	}
 
+	print("STRUCT COM", struct['rec_com'])
+
 	for key in sorted(inp.keys()):
 		if re.match("ion[0-9]+$", key): # then this is an ion
 	  		ion_dict = {'key':key}
@@ -385,7 +387,7 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 
 			xmlelement = ourdoc.createElement("group")
 			xmlmilestone.appendChild(xmlelement)
-			xmltext = ourdoc.createTextNode(str(milestone_group['group']))
+			xmltext = ourdoc.createTextNode(str(milestone_group['milestone_group']))
 			xmlelement.appendChild(xmltext)
 
 			xmlelement = ourdoc.createElement("value")
@@ -403,7 +405,7 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 
 			xmlelement = ourdoc.createElement("group")
 			xmlmilestone.appendChild(xmlelement)
-			xmltext = ourdoc.createTextNode(str(milestone_group['group']))
+			xmltext = ourdoc.createTextNode(str(milestone_group['milestone_group']))
 			xmlelement.appendChild(xmltext)
 
 			xmlelement = ourdoc.createElement("value")
