@@ -1,0 +1,91 @@
+#**********************************************************
+#  Name SEEKR Anchor Equilibration
+#  Date 2020-03-26
+#  * Generated with the SEEKR Automatic NAMD input file generator
+#**********************************************************
+
+set inpname	../building/holo
+set outname	equil_1
+firsttimestep	        0
+
+
+# Input Files
+parmfile                ../building/holo.parm7
+ambercoor               ../building/holo.rst7
+binCoordinates          ../building/holo.coor
+temperature             298
+extendedSystem          ../building/holo.xsc
+watermodel              tip4p
+
+
+# Output
+xstFile                 $outname.xst
+xstFreq                 10000
+outputname              $outname
+dcdfile                 $outname.dcd
+restartname             $outname.restart
+restartfreq             10000
+dcdfreq                 10000
+binaryoutput            yes
+outputEnergies          10000
+outputtiming            10000
+
+
+# Simulation Parameters
+amber                   yes
+readExclusions          yes
+exclude                 scaled1-4
+1-4scaling              0.833333
+scnb                    2.0
+cutoff                  8 
+switching               off 
+margin                  0.0
+zeroMomentum            on
+ljCorrection            on
+rigidBonds              all
+rigidTolerance          1e-8
+rigidIterations         100
+useSettle               on
+
+
+# Integrator Parameters
+timestep                2.0
+nonbondedFreq           1
+FullElectFrequency      1
+stepspercycle           10
+
+
+# Particle Mesh Ewald (PME) Settings
+PME                     yes
+PMEGridSpacing          1.0
+
+
+# Constant Temperature Control
+langevin                on
+langevinTemp            298
+langevinDamping         5
+langevinHydrogen        no
+
+
+# Pressure Control
+useGroupPressure        no
+useFlexibleCell         no
+useConstantArea         no
+
+
+# Periodic Boundary Conditions (PBC)
+wrapWater               on
+wrapAll                 off
+wrapNearest             on
+
+
+ # Collective Variables (Colvars)
+colvars                 on
+colvarsConfig           colvars.script
+
+
+
+
+numsteps 				1000000
+
+
