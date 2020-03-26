@@ -54,7 +54,7 @@ inputs = { #contains all DEFAULT parameters for seekr input file
 	'ion1conc': None,
 	'ion2conc': None,
 	'ion1charge' : 1.0,
-	'ion2charge' : -1.0
+	'ion2charge' : -1.0,
 	'ions':[],
 	'lpbe_npbe':'lpbe',
 	'apbs_executable':'apbs',
