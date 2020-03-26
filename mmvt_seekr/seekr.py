@@ -49,10 +49,12 @@ inputs = { #contains all DEFAULT parameters for seekr input file
 	'bd_time_factor' : 1,
 	'empty_pqrxml_path':"./empty.pqrxml",
 	'browndye_bin_dir':'',
-	'ion1rad':None,
-	'ion2rad':None,
-	'ion1conc':None,
-	'ion2conc':None,
+	'ion1rad': None,
+	'ion2rad': None,
+	'ion1conc': None,
+	'ion2conc': None,
+	'ion1charge' : 1.0,
+	'ion2charge' : -1.0
 	'ions':[],
 	'lpbe_npbe':'lpbe',
 	'apbs_executable':'apbs',
@@ -232,9 +234,9 @@ def _get_bd_settings(inp, sys_params, struct):
 	  
 	if inp['ion1conc'] and inp['ion1rad']: # if the old syntax is used
 		assert len(bd_settings['apbs_settings']['ions'])==0, "Cannot use 'ion#' parameter at the same time that you are using 'ion1conc' and 'ion1rad' parameters."
-		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion1conc'], 'charge': '-1.0', 'radius': inp['ion1rad'], 'name': 'ion1', 'key': 'ion1'})
+		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion1conc'], 'charge': inp['ion1charge'], 'radius': inp['ion1rad'], 'name': 'ion1', 'key': 'ion1'})
 		if inp['ion2conc'] and inp['ion2rad']:
-	  		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion2conc'], 'charge': '1.0', 'radius': inp['ion2rad'], 'name': 'ion2', 'key': 'ion2'})
+	  		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion2conc'], 'charge': inp['ion2charge'], 'radius': inp['ion2rad'], 'name': 'ion2', 'key': 'ion2'})
 	
 	print("bd_settings['apbs_settings']['ions']:", bd_settings['apbs_settings']['ions'])
 

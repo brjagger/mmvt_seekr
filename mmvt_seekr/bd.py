@@ -377,10 +377,10 @@ def _write_browndye_input(pqrs,settings,criteria,work_dir='.',browndye_bin='', s
 	pqrxmls = []
 	for pqr in pqrs: # for each molecule in pqr format
 		prefix = pqr.struct_id # name of the molecule
-		#print "PREFIX", prefix
+		print "PREFIX", prefix
 		pqrfile = os.path.join(work_dir, prefix+'.pqr')
 		pqr.save(pqrfile,pqr=True,endmdl=False)
-		#print "pqrfile:", pqrfile
+		print "pqrfile:", pqrfile
 		dxfile, debye = apbs.main(pqrfile, inputgen_settings=inputgen_settings, apbs_settings=apbs_settings,) # get the electrostatic grid and debye length for the molecule
 		debyes.append(debye)
 		pqrxmlfile = pqr2xml(pqrfile, pqr2xml_program=os.path.join(browndye_bin, 'pqr2xml')) # call the pqrxml program using the Browndye software suite
