@@ -85,7 +85,7 @@ def make_apbs_input_using_inputgen(inputgen_filename, pqr_filename, fadd=60, cfa
   #print 'pqr abspath', pqr_abspath
   #pre_ext = (pqr_basename.split('.'))[0]
   #print "pre_ext", pre_ext
-  input_filename = os.path.join(pqr_abspath+'/'+ pqr_basename+'.in')
+  input_filename = os.path.join(pqr_abspath+'/'+ pre_ext+'.in')
   print("APBS input_filename", input_filename)
   return input_filename
 
