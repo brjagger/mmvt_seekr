@@ -70,14 +70,16 @@ def make_apbs_input_using_inputgen(inputgen_filename, pqr_filename, fadd=60, cfa
   pre_ext = (pqr_basename.split('.'))[0]
   #print "pre_ext", pre_ext
   runstring = "python2 %s --potdx --fadd=%s --cfac=%s --space=%s --gmemceil=%s --istrng=%s %s" % (inputgen_filename, fadd, cfac, resolution, gmemceil, ionic_str, pqr_basename, )
-  olddir = os.curdir
+  olddir = os.path.abspath(os.curdir)
+  print("oldir", olddir)
   #print 'curdir', os.curdir
   os.chdir(os.path.dirname(pqr_filename))
-  #print 'curdir', os.curdir
+  print('curdir', os.path.abspath(os.curdir))
   print("Now creating APBS input file using command:", runstring)
   #print 'PWD', os.getcwd()
   os.system(runstring)
   os.chdir(olddir)
+  print("return to inputgen olddir", os.path.abspath(os.curdir))
   #print 'pqr filename', pqr_filename
   #pqr_basename= os.path.basename(pqr_filename)
   #pre_ext = '.'.join(pqr_filename.split('.')[0:-1]) # the part of the filename before the extension
@@ -148,11 +150,14 @@ def run_apbs (apbs_filename, input_filename, pqr_filename, std_out="apbs.out"):
   runstring = "%s %s > %s" % (apbs_filename, input_filename, std_out) # string to run apbs
   print("running command:", runstring)
   curdir = os.getcwd()
+  print("curdir", curdir)
   os.chdir(rundir) # we want to run APBS in the directory
+  print("rundir", os.getcwd())
   result = os.system(runstring) # execute the string
   if result != 0: raise Exception("There was a problem running APBS") # then an error occured
   dx_filename = pqr_filename + '.dx' # inputgen will automatically make this .dx file
   os.chdir(curdir)
+  print("back to dir", os.getcwd())
   return dx_filename # return the name of the dx file
 
 def get_debye_length(apbs_std_outfilename):
@@ -193,18 +198,21 @@ def main(pqr_filename,inputgen_settings={},apbs_settings={},):
   # make APBS input file using template (disabled)
   #input_filename
   # make DX grids
+  pqr_filename = os.path.abspath((pqr_filename))
   print('INPUT FILENAME', input_filename)
+  print('PQR filename', pqr_filename)
   apbs_out=pqr_filename+'.out' # make a default apbs output file
   # use the inputgen-generated file to make our own, more customized file
   apbs_params = scrape_inputfile(input_filename)
   #if fhpd_mode:
-  apbs_params['pqr'] = apbs_params['stem'] = os.path.basename(pqr_filename)
+  apbs_params['pqr'] = apbs_params['stem'] = os.path.abspath(pqr_filename)
   #else:
     #apbs_params['pqr'] = apbs_params['stem'] = pqr_filename
   apbs_params.update(apbs_settings)
-  new_input_filename = pqr_filename + '.in'
+  new_input_filename = os.path.abspath(pqr_filename) + '.in'
   dx = pqr_filename + '.dx'
   print(os.getcwd())
+  print('new_inp', new_input_filename)
   make_apbs_input_using_template(apbs_params, new_input_filename)
   #if not fhpd_mode:
   run_apbs(apbs_location, new_input_filename, pqr_filename, std_out=apbs_out) # save the electrostatic grid

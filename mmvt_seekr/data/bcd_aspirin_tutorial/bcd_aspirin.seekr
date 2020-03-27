@@ -1,7 +1,7 @@
 ### General System Info##
 project_name 				bcd_aspirin_tut
 rootdir					./bcd_aspirin_tut
-
+empty_rootdir				True
 ##System Files###
 
 ff amber
@@ -44,7 +44,7 @@ prod_steps			10000000
 ##############################################################
 # BD Parameters
 ##############################################################
-browndye_bin_dir  /soft/browndye/2018.5.1/bin
+browndye_bin_dir /software/repo/moleculardynamics/browndye/2018.5.1/bin/ 
 empty_pqrxml_path ../mvt_seekr/empty.pqrxml
 bd_radius 13.5
 bd_centerx  -3.503
@@ -56,7 +56,7 @@ n-trajectories 1000000
 ##############################################################
 # APBS Parameters
 ##############################################################
-apbs_executable /soft/apbs/2018.2.1/bin/apbs
+aspbs_executable /software/repo/moleculardynamics/apbs/2018.2.1/bin/apbs 
 
 #0.15 mM NaCl solution
  
