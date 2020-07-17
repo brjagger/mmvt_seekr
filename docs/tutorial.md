@@ -126,7 +126,7 @@ This will descend into every directory of fhpd/ and pull out the results files, 
 
 The analysis portion of SEEKR is designed to be conducted in a jupyter notebook by importing the necessary SEEKR libraries, 'analyze.py', 'model.py', and 'plots.py'.
 
-A sample jupyter notebook 'tutorial.ipynb' can also be found in the 'data' directory and walks through the analysis portion of the tutorial.
+A sample jupyter notebook 'tutorial.ipynb' can also be found in the 'data' directory and walks through the analysis portion of the tutorial. the directory 'aspirin_expected_results' contains sample results files that can be run with the corresponding ipython notebook in the directory for situations where one did not run complete calculation on their own.
 
 
 
