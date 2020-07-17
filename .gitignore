@@ -100,3 +100,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+#tutorial files
+mmvt_seekr/data/bcd_aspirin_tutorial
