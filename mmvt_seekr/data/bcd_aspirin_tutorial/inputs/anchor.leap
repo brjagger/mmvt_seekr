@@ -1,0 +1,81 @@
+addAtomTypes {
+{ "HZ" "H" "sp3" }
+{ "H" "H" "sp3" }
+{ "HO" "H" "sp3" }
+{ "H1" "H" "sp3" }
+{ "H2" "H" "sp3" }
+{ "HC" "H" "sp3" }
+{ "HA" "H" "sp3" }
+{ "HW" "H" "sp3" }
+{ "OW" "O" "sp3" }
+{ "OH" "O" "sp3" }
+{ "OS" "O" "sp3" }
+{ "O" "O" "sp2" }
+{ "O2" "O" "sp2" }
+{ "S" "S" "sp3" }
+{ "CT" "C" "sp3" }
+{ "CZ" "C" "sp3" }
+{ "C" "C" "sp2" }
+{ "CA" "C" "sp2" }
+{ "N" "N" "sp2" }
+{ "CL" "Cl" "sp3" }
+{ "CG" "C" "sp3" }
+}
+parm99 = loadamberparams parm99.dat
+FF99SB = loadamberparams frcmod.ff99SB
+loadamberparams aspirin_tleap_recharge.frcmod
+source leaprc.gaff
+CHCL3 = loadamberparams frcmod.chcl3
+loadoff all_amino94.lib
+loadoff allaminoct94.lib
+loadoff all_aminont94.lib
+loadoff solvents.lib
+glycam04 = loadamberparams /home/bjagger/Desktop/cyclodextrin_data/parameters/q4md-CD/cD_aspirin/CD-Glycam_04l.dat
+Q4MDCD = loadamberparams CD-q4md.frcmod
+loadamberprep aspirin_tleap_recharge.prepc
+HOH = TP3
+WAT = TP3
+MGO = loadmol2 CD-MGO.mol2
+set MGO name "MGO"
+set MGO head MGO.1.C4
+set MGO tail MGO.1.O1
+set MGO.1 connect0 MGO.1.C4
+set MGO.1 connect1 MGO.1.O1
+set MGO.1 restype saccharide
+set MGO.1 name "MGO"
+set MGO.1.C1 type CG
+set MGO.1.H1 type H2
+set MGO.1.O1 type OS
+set MGO.1.C2 type CG
+set MGO.1.H2 type H1
+set MGO.1.O2 type OH
+set MGO.1.HO2 type HO
+set MGO.1.C3 type CG
+set MGO.1.H3 type H1
+set MGO.1.O3 type OH
+set MGO.1.HO3 type HO
+set MGO.1.C4 type CG
+set MGO.1.H4 type H1
+set MGO.1.C5 type CG
+set MGO.1.H5 type H1
+set MGO.1.O5 type OS
+set MGO.1.C6 type CG
+set MGO.1.H61 type H1
+set MGO.1.H62 type H1
+set MGO.1.O6 type OH
+set MGO.1.HO6 type HO
+APN = loadmol2 aspirin_tleap_recharge.mol2
+
+holo = loadpdb /scratch/bjagger/projects/seekr/bcd_voronoi/aspirin_q4md/BCD_aspirin_q4md_vt/anchor_0_0_site1_-0.1_-0.3_2.4_0/md/holo_wet.pdb
+
+set holo head holo.1.C4
+set holo tail holo.7.O1
+bond holo.1.C4 holo.7.O1
+charge holo
+check holo
+
+saveamberparm holo /scratch/bjagger/projects/seekr/bcd_voronoi/aspirin_q4md/BCD_aspirin_q4md_vt/anchor_0_0_site1_-0.1_-0.3_2.4_0/md/building/holo.parm7 /scratch/bjagger/projects/seekr/bcd_voronoi/aspirin_q4md/BCD_aspirin_q4md_vt/anchor_0_0_site1_-0.1_-0.3_2.4_0/md/building/holo.rst7
+
+savepdb holo  /scratch/bjagger/projects/seekr/bcd_voronoi/aspirin_q4md/BCD_aspirin_q4md_vt/anchor_0_0_site1_-0.1_-0.3_2.4_0/md/building/holo_leap.pdb
+
+quit

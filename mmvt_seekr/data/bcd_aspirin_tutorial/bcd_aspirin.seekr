@@ -1,0 +1,71 @@
+### General System Info##
+project_name 				bcd_aspirin_tut
+rootdir					./bcd_aspirin_tut
+empty_rootdir				True
+##System Files###
+
+ff amber
+system_pdb_filename 		./inputs/holo_leap.pdb
+system_parm_filename 		./inputs/holo.parm7
+system_rst_filename		./inputs/holo.rst7
+system_bin_coordinates		./inputs/holo.coor
+extendedsystem_filename		./inputs/holo.xsc
+
+## Additional structures for BD##
+
+lig_pqr_filename 		./inputs/aspirin.pqr
+rec_dry_pdb_filename		./inputs/rec_dry.pdb
+rec_dry_pqr_filename 		./inputs/rec_dry.pqr
+watermodel			tip4p
+
+
+
+###Milestone Definition###
+milestone_group1 [
+	colvar_type distance,
+	group1 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147,
+	group2 148 149 150 151 152 153 154 155 156 157 158 159 160 161 162 163 164 165 166 167 168,
+	milestone_values 1.5 3.0 4.5 6.0 7.5 9.0 10.5 12.0 13.5,
+	equil_rest_force 40.0, 
+]
+
+
+###Anchor Equilibration###
+equil 			True
+equil_ensemble		nvt
+equil_steps 		1000000
+equil_write_freq	10000
+
+###Production ###
+prod 				True
+prod_ensemble		nvt
+prod_steps			10000000
+
+##############################################################
+# BD Parameters
+##############################################################
+browndye_bin_dir /software/repo/moleculardynamics/browndye/2018.5.1/bin/ 
+empty_pqrxml_path ../mvt_seekr/empty.pqrxml
+bd_radius 13.5
+bd_centerx  -3.503
+bd_centery -11.602
+bd_centerz 82.823
+bd_threads 10
+n-trajectories 1000000
+
+##############################################################
+# APBS Parameters
+##############################################################
+aspbs_executable /software/repo/moleculardynamics/apbs/2018.2.1/bin/apbs 
+
+#0.15 mM NaCl solution
+ 
+ion1rad 1.36375
+ion2rad 2.27
+ion1charge 1.0
+ion2charge -1.0
+ion1conc 0.15
+ion2conc 0.15
+
+lpbe_npbe npbe
+

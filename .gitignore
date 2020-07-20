@@ -102,4 +102,4 @@ ENV/
 .mypy_cache/
 
 #tutorial files
-mmvt_seekr/data/bcd_aspirin_tutorial
+mmvt_seekr/data/bcd_aspirin_tutorial/bcd_aspirin_tut
