@@ -409,10 +409,10 @@ class Milestone():
 
 
    """
-   def __init__(self, id, group, value=None, ):
+   def __init__(self, id, group, value=None, end="false" ):
       self.id = id # most of this information is read from the provided milestone.xml file
       self.group = group
-      #self.end = end.lower()
+      self.end = end.lower()
       #self.fullname = fullname
       #self.directory = directory
       #self.anchor = anchor
@@ -568,7 +568,9 @@ def _parse_milestoning_file(milestoning_filename):
             #end = milestone.find('end').text.strip()
             value_xml = milestone.find("value")
             value = value_xml.text.strip()
-            milestone_obj = Milestone(id, group, value)
+            end_xml = milestone.find("end")
+            end = end_xml.text.strip()
+            milestone_obj = Milestone(id, group, value, end)
             if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
             anchor_obj._add_milestone(milestone_obj)
          site_obj._add_anchor(anchor_obj)
