@@ -29,6 +29,8 @@ R_GAS_CONSTANT = 0.0019872 # in kcal/mol*K
 DEFAULT_TEMP = 0.0 # temperature to assign if not in the xml file
 DEFAULT_MD_TIME_FACTOR = 2.0e-15
 DEFAULT_BD_TIME_FACTOR = 1000.0
+DEFAULT_ROOTDIR = "./"
+DEFAULT_BDDIR = "./"
 DEFAULT_SHAPE = "sphere"
 GRID_TRANSITION = "SEEKR: Milestone Transition: "
 GRID_TRANSITION_COMPILE = re.compile(GRID_TRANSITION)
@@ -68,6 +70,7 @@ class Model():
    def __init__(self): # initialize all variables used in the model
       self.sites = []
       self.temperature = 0.0
+      self.browndye_bin_dir = ''
       self.md_time_factor = 0.0
       self.bd_time_factor = 0.0
       self.num_sites = 0
@@ -327,8 +330,9 @@ class Anchor():
     total_time : float
       total time spent in the anchor
     """
-      
     cell_counts = {}
+    assert(len(self.collisions) > 0), \
+      "No collisions detected in anchor %s" % self.index
     for collision in self.collisions:
       if max_step != None and int(collision.step + self.offsets[collision.replicate]) > max_step:
        break
@@ -342,6 +346,7 @@ class Anchor():
          cell_counts[curr_cell][new_cell] = 1
       else:
        cell_counts[curr_cell] = {new_cell:1} 
+    print("cell_counts", cell_counts)
     total_time = collision.step *md_time_factor + self.offsets[collision.replicate] * md_time_factor 
 
     return cell_counts, total_time
@@ -409,10 +414,10 @@ class Milestone():
 
 
    """
-   def __init__(self, id, group, value=None, ):
+   def __init__(self, id, group, value=None, end="false" ):
       self.id = id # most of this information is read from the provided milestone.xml file
       self.group = group
-      #self.end = end.lower()
+      self.end = end.lower()
       #self.fullname = fullname
       #self.directory = directory
       #self.anchor = anchor
@@ -505,6 +510,20 @@ def _parse_milestoning_file(milestoning_filename):
       model.temperature = float(xml_temp.text.strip())
    else: # some old milestones.xml files may not have this tag
       model.temperature = DEFAULT_TEMP
+      
+  # Rootdir
+   xml_rootdir = root.find('rootdir') # temperature tag
+   if xml_rootdir!= None: # make sure it exists
+      rootdir = xml_rootdir.text.strip()
+   else: # some old milestones.xml files may not have this tag
+      rootdir = DEFAULT_ROOTDIR
+      
+  # BDdir
+   xml_bddir = root.find('browndye_bin_dir') # temperature tag
+   if xml_bddir!= None: # make sure it exists
+      bddir = xml_bddir.text.strip()
+   else: # some old milestones.xml files may not have this tag
+      bddir = DEFAULT_BDDIR
 
    # MD Time Factor
    xml_md_time_factor = root.find('md_time_factor') # temperature tag
@@ -565,10 +584,14 @@ def _parse_milestoning_file(milestoning_filename):
             #   radius = milestone.find('radius').text.strip()
             #elif shape == "rotational":
             #   pass
-            #end = milestone.find('end').text.strip()
+            end_xml = milestone.find('end')
+            if end_xml != None:
+              end = milestone.find('end').text.strip()
+            else:
+              end = "false"
             value_xml = milestone.find("value")
             value = value_xml.text.strip()
-            milestone_obj = Milestone(id, group, value)
+            milestone_obj = Milestone(id, group, value, end)
             if milestone_obj.id not in milestone_id_list: milestone_id_list.append(milestone_obj.id)
             anchor_obj._add_milestone(milestone_obj)
          site_obj._add_anchor(anchor_obj)
@@ -579,10 +602,18 @@ def _parse_milestoning_file(milestoning_filename):
 
       bd_index = len(milestone_id_list) -1
       b_surf_index = len(milestone_id_list)
-      model.b_surface = Anchor(index=b_surf_index,  md=False, bd=True, fullname="b_surface", directory="b_surface", siteindex=0, sitename="b_surface")
+      model.b_surface = Anchor(index=b_surf_index,  md=False, bd=True, 
+                               fullname="b_surface", 
+                               directory=os.path.join(rootdir, "b_surface"), 
+                               siteindex=0, sitename="b_surface")
 
       #print("bd index", bd_index)
-      model.bd_milestone = Anchor(index=bd_index, md=False, bd=True, fullname="bd_milestone", directory="bd_milestone", siteindex=0, sitename="bd_milestone") 
+      model.bd_milestone = Anchor(index=bd_index, md=False, bd=True, 
+        fullname="bd_milestone", 
+        directory=os.path.join(rootdir, "bd_milestone"), 
+        siteindex=0, sitename="bd_milestone") 
+      
+      model.browndye_bin_dir = bddir
      
 
    return model 

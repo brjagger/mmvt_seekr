@@ -316,7 +316,8 @@ def _get_filetree_settings(anchor_list):
 	return filetree_settings
 
 
-def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_factor, milestone_filename ):
+def _write_milestone_file(anchor_list, rootdir, temperature, md_time_factor, 
+												bd_time_factor, milestone_filename, browndye_bin_dir):
 
 	ourdoc = Document() # create xml document
 	root = ourdoc.createElement("root") # create the xml tree
@@ -326,6 +327,16 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 	root.appendChild(xmltemp)
 	xmltemptext = ourdoc.createTextNode(str(temperature))
 	xmltemp.appendChild(xmltemptext) 
+	
+	xmlrootdir = ourdoc.createElement("rootdir")
+	root.appendChild(xmlrootdir)
+	xmlrootdirtext = ourdoc.createTextNode(str(rootdir))
+	xmlrootdir.appendChild(xmlrootdirtext) 
+	
+	xmlbddir = ourdoc.createElement("browndye_bin_dir")
+	root.appendChild(xmlbddir)
+	xmlbddirtext = ourdoc.createTextNode(str(browndye_bin_dir))
+	xmlbddir.appendChild(xmlbddirtext) 
 
 	# MD time factor
 	xmlmd_time_factor = ourdoc.createElement("md_time_factor") # include temperature
@@ -396,6 +407,11 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 			xmlmilestone.appendChild(xmlelement)
 			xmltext = ourdoc.createTextNode(str(milestone_group['lower_bound']))
 			xmlelement.appendChild(xmltext)
+			
+			xmlelement = ourdoc.createElement("end")
+			xmlmilestone.appendChild(xmlelement)
+			xmltext = ourdoc.createTextNode(str(milestone_group['lower_end']))
+			xmlelement.appendChild(xmltext)
 
 			xmlmilestone = ourdoc.createElement("milestone")
 			xmlanchor.appendChild(xmlmilestone)
@@ -415,7 +431,10 @@ def _write_milestone_file(anchor_list, temperature, md_time_factor, bd_time_fact
 			xmltext = ourdoc.createTextNode(str(milestone_group['upper_bound']))
 			xmlelement.appendChild(xmltext)
 
-
+			xmlelement = ourdoc.createElement("end")
+			xmlmilestone.appendChild(xmlelement)
+			xmltext = ourdoc.createTextNode(str(milestone_group['upper_end']))
+			xmlelement.appendChild(xmltext)
 
 
 		anchor_counter += 1
@@ -435,10 +454,17 @@ def _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths):
 	anchor_list = []
 	for anchor in anchor_dirlist:
 		anchor_milestone_params = []
-		milestone_params = md._gen_anchor_milestone_params(milestones, anchor_index)
+		if anchor_index == len(anchor_dirlist)-1:
+			end = True
+		else:
+			end = False
+		milestone_params = md._gen_anchor_milestone_params(milestones, anchor_index,
+																											end)
 		for milestone in milestone_params:
 			anchor_milestone_params.append(milestone)
-		anchor_list.append({'name' : anchor, 'directory' : md_file_paths[anchor_index]['prod'], 'milestone_params' : anchor_milestone_params,})
+		anchor_list.append({'name' : anchor, 
+											'directory' : md_file_paths[anchor_index]['prod'], 
+											'milestone_params' : anchor_milestone_params,})
 		anchor_index += 1
 
 	return anchor_list
@@ -513,8 +539,7 @@ def prepare_seekr():
 	milestone_filename= os.path.join(sys_params['rootdir'], 'milestones.xml') 
 	anchor_list = _group_milestones_to_anchor(milestones, anchor_dirlist, md_file_paths,)
 	print('Anchor List',anchor_list)
-	_write_milestone_file(anchor_list, md_settings['master_temperature'], 
-		sys_params['md_time_factor'], sys_params['bd_time_factor'],milestone_filename)
+	
 
 	structures = _load_structures(inputs, sys_params)
 	bd_settings = _get_bd_settings(inputs, sys_params, structures)
@@ -531,7 +556,11 @@ def prepare_seekr():
 		'bd_lower_bound_index' : bd_lower_bound_index,
 		'bd_index': bd_index,
 		})
-
+	
+	_write_milestone_file(anchor_list, sys_params['rootdir'], md_settings['master_temperature'], 
+		sys_params['md_time_factor'], sys_params['bd_time_factor'], 
+		milestone_filename, bd_settings['browndye_bin_dir'])
+	
 	print("BD b surface distance", b_surf_distance)
 	bd.main(bd_settings)
 	#_write_milestone_file(anchor_list, md_settings['master_temperature'], 

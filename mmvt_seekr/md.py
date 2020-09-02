@@ -25,7 +25,7 @@ def _make_relative_path(oldpath, fromdir):
 
 	return sep.join(relpathlist) # and join them with the '/' to make our relative path
 
-def _gen_anchor_milestone_params(milestones, anchor_index):
+def _gen_anchor_milestone_params(milestones, anchor_index, end=False):
 	anchor_milestone_params= []
 
 	for milestone in milestones:
@@ -40,8 +40,13 @@ def _gen_anchor_milestone_params(milestones, anchor_index):
 		milestone_param_dict['lower_milestone_index'] = (anchor_index) ## may need to be changed for multidimensional milestones
 		milestone_param_dict['upper_milestone_index'] =  (anchor_index +1)
 		milestone_param_dict['curr_anchor'] = anchor_index
+		if end:
+			milestone_param_dict['lower_end'] = 'false'
+			milestone_param_dict['upper_end'] = 'true'
+		else:
+			milestone_param_dict['lower_end'] = 'false'
+			milestone_param_dict['upper_end'] = 'false'
 		anchor_milestone_params.append(milestone_param_dict)
-
 
 	return anchor_milestone_params
 

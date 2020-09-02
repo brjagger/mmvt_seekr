@@ -69,7 +69,7 @@ def make_apbs_input_using_inputgen(inputgen_filename, pqr_filename, fadd=60, cfa
   #print 'pqr abspath', pqr_abspath
   pre_ext = (pqr_basename.split('.'))[0]
   #print "pre_ext", pre_ext
-  runstring = "python2 %s --potdx --fadd=%s --cfac=%s --space=%s --gmemceil=%s --istrng=%s %s" % (inputgen_filename, fadd, cfac, resolution, gmemceil, ionic_str, pqr_basename, )
+  runstring = "python %s --potdx --fadd=%s --cfac=%s --space=%s --gmemceil=%s --istrng=%s %s" % (inputgen_filename, fadd, cfac, resolution, gmemceil, ionic_str, pqr_basename, )
   olddir = os.path.abspath(os.curdir)
   print("oldir", olddir)
   #print 'curdir', os.curdir

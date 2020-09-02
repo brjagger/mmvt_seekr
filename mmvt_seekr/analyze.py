@@ -90,9 +90,11 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 					anchor_max_steps = max_steps[int(anchor.index)]
 
 
-				this_counts, this_total_counts, this_total_times, this_avg_times = anchor._get_md_transition_statistics(model.md_time_factor, 
+				this_counts, this_total_counts, this_total_times, this_avg_times = \
+						anchor._get_md_transition_statistics(model.md_time_factor, 
 						anchor_max_steps)
-				this_cell_counts, this_cell_time = anchor._get_md_vt_collisions(model.md_time_factor, anchor_max_steps)
+				this_cell_counts, this_cell_time = anchor._get_md_vt_collisions(
+					model.md_time_factor, anchor_max_steps)
 				
 				total_counts = _add_dictionaries(total_counts, this_total_counts)
 				if verbose: print('counts',  this_counts)
@@ -123,9 +125,7 @@ def analyze_kinetics(model, bound_indices, max_steps =[None], verbose=False,):
 	k_cell = np.zeros((len(total_cell_times),len(total_cell_times)))  
 	k_mod = np.zeros((len(total_cell_times),len(total_cell_times))) 
 	
-
-
-
+	if verbose: print("end_indeces:", end_indeces)
 	for cell in list(total_cell_counts.keys()):
 		for new_cell in list(total_cell_counts[cell].keys()):
 			if new_cell == -1: continue #skip transitions to bound state milestone
@@ -356,7 +356,9 @@ def calc_kon_from_bd(model, bound_indices, Q):
 	#print("q0", q0)
 	beta = _get_beta_from_K_q0(K, q0, bound_indices)
 	#print("beta", beta)
-	k_b = _run_compute_rate_constant(results_filename=os.path.join("b_surface", "results.xml"), browndye_bin_dir="")
+	k_b = _run_compute_rate_constant(results_filename=os.path.join(
+		model.b_surface.directory, "results.xml"), 
+		browndye_bin_dir=model.browndye_bin_dir)
 	#print( "k(b):", k_b)
 	k_on = k_b * beta
 
