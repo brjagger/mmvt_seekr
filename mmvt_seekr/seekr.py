@@ -231,7 +231,9 @@ def _get_bd_settings(inp, sys_params, struct):
 	  			ion_value = ' '.join(split_param[1:])
 	  			ion_dict[ion_key] = ion_value
   			bd_settings['apbs_settings']['ions'].append(ion_dict)
-	  
+	
+	bd_settings['apbs_settings']['lpbe_npbe'] = inp['lpbe_npbe']
+	
 	if inp['ion1conc'] and inp['ion1rad']: # if the old syntax is used
 		assert len(bd_settings['apbs_settings']['ions'])==0, "Cannot use 'ion#' parameter at the same time that you are using 'ion1conc' and 'ion1rad' parameters."
 		bd_settings['apbs_settings']['ions'].append({'concentration': inp['ion1conc'], 'charge': inp['ion1charge'], 'radius': inp['ion1rad'], 'name': 'ion1', 'key': 'ion1'})
