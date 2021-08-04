@@ -56,7 +56,8 @@ n-trajectories 1000000
 ##############################################################
 # APBS Parameters
 ##############################################################
-aspbs_executable /software/repo/moleculardynamics/apbs/2018.2.1/bin/apbs 
+apbs_executable apbs
+inputgen_executable /home/lvotapka/Downloads/apbs/tools/manip/inputgen.py
 
 #0.15 mM NaCl solution
  
