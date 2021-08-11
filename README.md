@@ -6,6 +6,10 @@ mmvt_seekr
 
 SEEKR toolkit for multiscale MD/BD/Milestoning simulations
 
+WARNING: THIS SOFTWARE IS DEPRECATED AND WILL NO LONGER BE SUPPORTED. Instead,
+consider using SEEKR2 which has all the features of this program along with
+many improvements. SEEKR2 can be found at https://github.com/seekrcentral/seekr2.git
+
 ### Copyright
 
 Copyright (c) 2019, Benjamin Jagger, Amaro Lab, UC San Diego
